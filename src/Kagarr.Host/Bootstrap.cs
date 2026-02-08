@@ -4,6 +4,7 @@ using Kagarr.Core.Download;
 using Kagarr.Core.Games;
 using Kagarr.Core.Indexers;
 using Kagarr.Core.MediaCovers;
+using Kagarr.Core.MediaFiles;
 using Kagarr.Core.MetadataSource;
 using Kagarr.Core.MetadataSource.Igdb;
 using Microsoft.AspNetCore.Builder;
@@ -54,6 +55,9 @@ namespace Kagarr.Host
             // Register download client services
             builder.Services.AddSingleton<IDownloadClientRepository, DownloadClientRepository>();
             builder.Services.AddSingleton<IDownloadClientService, DownloadClientService>();
+
+            // Register import services
+            builder.Services.AddSingleton<IImportGameFile, GameFileImportService>();
 
             // Register metadata source services
             builder.Services.AddSingleton<IIgdbAuthService, IgdbAuthService>();
