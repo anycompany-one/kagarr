@@ -18,6 +18,8 @@ COPY src/Kagarr.SignalR/Kagarr.SignalR.csproj src/Kagarr.SignalR/
 COPY src/Kagarr.Api.V1/Kagarr.Api.V1.csproj src/Kagarr.Api.V1/
 COPY src/Kagarr.Host/Kagarr.Host.csproj src/Kagarr.Host/
 COPY src/Kagarr.Console/Kagarr.Console.csproj src/Kagarr.Console/
+COPY src/Kagarr.Test.Common/Kagarr.Test.Common.csproj src/Kagarr.Test.Common/
+COPY src/Kagarr.Core.Test/Kagarr.Core.Test.csproj src/Kagarr.Core.Test/
 COPY src/Directory.Build.props src/
 COPY src/Kagarr.sln src/
 COPY global.json .
