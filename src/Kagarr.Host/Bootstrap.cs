@@ -91,36 +91,24 @@ namespace Kagarr.Host
             app.MapControllers();
             app.MapHub<Kagarr.SignalR.KagarrHub>("/signalr/kagarr");
 
-            // Fallback: serve a simple status page
-            app.MapFallback(async context =>
+            // SPA fallback: serve index.html for client-side routing, or a status page if no UI
+            var indexPath = global::System.IO.Path.Combine(uiPath, "index.html");
+            if (global::System.IO.File.Exists(indexPath))
             {
-                context.Response.ContentType = "text/html";
-                await context.Response.WriteAsync(@"
-<!DOCTYPE html>
-<html>
-<head><title>Kagarr</title>
-<style>
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background: #1a1a2e; color: #eee; }
-.container { text-align: center; }
-h1 { font-size: 3em; margin-bottom: 0.2em; }
-.subtitle { color: #888; font-size: 1.2em; }
-.status { margin-top: 2em; padding: 1em; background: #16213e; border-radius: 8px; }
-.badge { display: inline-block; padding: 4px 12px; background: #0f3460; border-radius: 4px; margin: 4px; font-size: 0.9em; }
-</style>
-</head>
-<body>
-<div class='container'>
-<h1>Kagarr</h1>
-<p class='subtitle'>The missing *arr for games</p>
-<div class='status'>
-<span class='badge'>API: /api/v1/</span>
-<span class='badge'>Port: 6767</span>
-<span class='badge'>Status: Running</span>
-</div>
-</div>
-</body>
-</html>");
-            });
+                app.MapFallback(async context =>
+                {
+                    context.Response.ContentType = "text/html";
+                    await context.Response.SendFileAsync(indexPath);
+                });
+            }
+            else
+            {
+                app.MapFallback(async context =>
+                {
+                    context.Response.ContentType = "text/html";
+                    await context.Response.WriteAsync("<html><body style='font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0'><div style='text-align:center'><h1>Kagarr</h1><p style='color:#888'>API running on port 6767. Build the frontend to see the UI.</p></div></body></html>");
+                });
+            }
 
             return app;
         }
