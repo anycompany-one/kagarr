@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kagarr.Core.Games;
 using Kagarr.Core.Platforms;
 using Kagarr.Http.REST;
 
@@ -19,6 +20,8 @@ namespace Kagarr.Api.V1.Games
         public string Developer { get; set; }
         public string Publisher { get; set; }
         public DateTime? ReleaseDate { get; set; }
+        public List<MediaCover> Images { get; set; }
+        public string RemoteCover { get; set; }
         public string Path { get; set; }
         public bool Monitored { get; set; }
         public int QualityProfileId { get; set; }
@@ -33,7 +36,7 @@ namespace Kagarr.Api.V1.Games
                 return null;
             }
 
-            return new GameResource
+            var resource = new GameResource
             {
                 Id = game.Id,
                 Title = game.Title,
@@ -48,6 +51,7 @@ namespace Kagarr.Api.V1.Games
                 Developer = game.Developer,
                 Publisher = game.Publisher,
                 ReleaseDate = game.ReleaseDate,
+                Images = game.Images,
                 Path = game.Path,
                 Monitored = game.Monitored,
                 QualityProfileId = game.QualityProfileId,
@@ -55,6 +59,15 @@ namespace Kagarr.Api.V1.Games
                 Added = game.Added,
                 RootFolderPath = game.RootFolderPath
             };
+
+            // Set the remote cover URL for convenience
+            var cover = game.Images?.Find(i => i.CoverType == MediaCoverTypes.Cover);
+            if (cover != null)
+            {
+                resource.RemoteCover = cover.RemoteUrl;
+            }
+
+            return resource;
         }
 
         public Kagarr.Core.Games.Game ToModel()
@@ -74,6 +87,7 @@ namespace Kagarr.Api.V1.Games
                 Developer = Developer,
                 Publisher = Publisher,
                 ReleaseDate = ReleaseDate,
+                Images = Images ?? new List<MediaCover>(),
                 Path = Path,
                 Monitored = Monitored,
                 QualityProfileId = QualityProfileId,

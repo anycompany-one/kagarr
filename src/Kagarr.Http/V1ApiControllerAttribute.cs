@@ -6,13 +6,16 @@ namespace Kagarr.Http
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public sealed class V1ApiControllerAttribute : Attribute, IRouteTemplateProvider
     {
-        public string Template
+        private const string ControllerResource = "[controller]";
+
+        public V1ApiControllerAttribute(string resource = ControllerResource)
         {
-            get
-            {
-                return "api/v1/[controller]";
-            }
+            Resource = resource;
+            Template = $"api/v1/{resource}";
         }
+
+        public string Resource { get; }
+        public string Template { get; }
 
         public int? Order => 2;
         public string Name { get; set; }

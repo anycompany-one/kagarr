@@ -1,6 +1,9 @@
 using FluentMigrator.Runner;
 using Kagarr.Core.Datastore;
 using Kagarr.Core.Games;
+using Kagarr.Core.MediaCovers;
+using Kagarr.Core.MetadataSource;
+using Kagarr.Core.MetadataSource.Igdb;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -41,6 +44,11 @@ namespace Kagarr.Host
             // Register services
             builder.Services.AddSingleton<IGameRepository, GameRepository>();
             builder.Services.AddSingleton<IGameService, GameService>();
+
+            // Register metadata source services
+            builder.Services.AddSingleton<IIgdbAuthService, IgdbAuthService>();
+            builder.Services.AddSingleton<ISearchForNewGame, IgdbProxy>();
+            builder.Services.AddSingleton<IMapCoversToLocal, MediaCoverService>();
 
             // FluentMigrator
             builder.Services.AddFluentMigratorCore()
