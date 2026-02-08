@@ -1,6 +1,8 @@
 using FluentMigrator.Runner;
 using Kagarr.Core.Datastore;
+using Kagarr.Core.Download;
 using Kagarr.Core.Games;
+using Kagarr.Core.Indexers;
 using Kagarr.Core.MediaCovers;
 using Kagarr.Core.MetadataSource;
 using Kagarr.Core.MetadataSource.Igdb;
@@ -44,6 +46,14 @@ namespace Kagarr.Host
             // Register services
             builder.Services.AddSingleton<IGameRepository, GameRepository>();
             builder.Services.AddSingleton<IGameService, GameService>();
+
+            // Register indexer services
+            builder.Services.AddSingleton<IIndexerRepository, IndexerRepository>();
+            builder.Services.AddSingleton<IIndexerService, IndexerService>();
+
+            // Register download client services
+            builder.Services.AddSingleton<IDownloadClientRepository, DownloadClientRepository>();
+            builder.Services.AddSingleton<IDownloadClientService, DownloadClientService>();
 
             // Register metadata source services
             builder.Services.AddSingleton<IIgdbAuthService, IgdbAuthService>();
