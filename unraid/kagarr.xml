@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>kagarr</Name>
+  <Repository>ghcr.io/anycompany-one/kagarr:latest</Repository>
+  <Registry>https://github.com/anycompany-one/kagarr/pkgs/container/kagarr</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/anycompany-one/kagarr/issues</Support>
+  <Project>https://github.com/anycompany-one/kagarr</Project>
+  <Overview>Kagarr is the missing *arr for games. A self-hosted game library manager and download automation tool that integrates with IGDB for metadata, Prowlarr/Newznab/Torznab indexers for search, and qBittorrent/SABnzbd for downloading.</Overview>
+  <Category>MediaApp:Other</Category>
+  <WebUI>http://[IP]:[PORT:6767]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/anycompany-one/kagarr/main/unraid/kagarr.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/anycompany-one/kagarr/main/frontend/public/favicon.svg</Icon>
+  <ExtraParams/>
+  <DateInstalled/>
+  <Description>Kagarr - The missing *arr for games. Automated game library management with IGDB metadata, indexer search, and download client integration.</Description>
+  <Config Name="WebUI Port" Target="6767" Default="6767" Mode="tcp" Description="Web interface port" Type="Port" Display="always" Required="true" Mask="false">6767</Config>
+  <Config Name="Config" Target="/config" Default="/mnt/user/appdata/kagarr" Mode="rw" Description="Application configuration and database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/kagarr</Config>
+  <Config Name="Games" Target="/games" Default="/mnt/user/data/games" Mode="rw" Description="Game library root folder" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/data/games</Config>
+  <Config Name="Downloads" Target="/downloads" Default="/mnt/user/data/downloads" Mode="rw" Description="Download client output folder" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/data/downloads</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="IGDB Client ID" Target="KAGARR_IGDB_CLIENT_ID" Default="" Mode="" Description="Twitch/IGDB Client ID for game metadata" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="IGDB Client Secret" Target="KAGARR_IGDB_CLIENT_SECRET" Default="" Mode="" Description="Twitch/IGDB Client Secret" Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="Discord Webhook" Target="KAGARR_DISCORD_WEBHOOK" Default="" Mode="" Description="Discord webhook URL for notifications" Type="Variable" Display="always" Required="false" Mask="false"/>
+</Container>

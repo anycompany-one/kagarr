@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './Components/Navbar';
 import Library from './Game/Library';
 import AddGame from './Game/AddGame';
+import Settings from './Settings/Settings';
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Library />} />
           <Route path="/add" element={<AddGame />} />
+          <Route path="/settings/*" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

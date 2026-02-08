@@ -1,4 +1,12 @@
-# Build stage
+# Frontend build stage
+FROM node:20-alpine AS frontend
+WORKDIR /frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ .
+RUN npm run build
+
+# Backend build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
@@ -12,6 +20,8 @@ COPY src/Kagarr.Host/Kagarr.Host.csproj src/Kagarr.Host/
 COPY src/Kagarr.Console/Kagarr.Console.csproj src/Kagarr.Console/
 COPY src/Directory.Build.props src/
 COPY src/Kagarr.sln src/
+COPY global.json .
+COPY stylecop.json .
 
 RUN dotnet restore src/Kagarr.sln
 
@@ -19,11 +29,13 @@ RUN dotnet restore src/Kagarr.sln
 COPY src/ src/
 RUN dotnet publish src/Kagarr.Console/Kagarr.Console.csproj -c Release -o /app --no-restore
 
+# Copy built frontend into the app output
+COPY --from=frontend /src/Kagarr.Host/UI /app/UI
+
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
-# Follow linuxserver.io patterns for PUID/PGID
 ENV PUID=1000 \
     PGID=1000 \
     KAGARR_DATA=/config

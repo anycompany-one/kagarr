@@ -7,6 +7,7 @@ using Kagarr.Core.MediaCovers;
 using Kagarr.Core.MediaFiles;
 using Kagarr.Core.MetadataSource;
 using Kagarr.Core.MetadataSource.Igdb;
+using Kagarr.Core.Notifications;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -58,6 +59,9 @@ namespace Kagarr.Host
 
             // Register import services
             builder.Services.AddSingleton<IImportGameFile, GameFileImportService>();
+
+            // Register notification services
+            builder.Services.AddSingleton<INotificationService, DiscordWebhookService>();
 
             // Register metadata source services
             builder.Services.AddSingleton<IIgdbAuthService, IgdbAuthService>();

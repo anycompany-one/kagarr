@@ -22,6 +22,12 @@ function Navbar() {
         >
           Add Game
         </NavLink>
+        <NavLink
+          to="/settings"
+          className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
+        >
+          Settings
+        </NavLink>
       </div>
     </nav>
   );
