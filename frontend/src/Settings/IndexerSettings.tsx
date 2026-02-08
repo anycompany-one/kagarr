@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const key = localStorage.getItem('kagarr_api_key');
+  if (key) headers['X-Api-Key'] = key;
+  return headers;
+}
+
 interface IndexerResource {
   id: number;
   name: string;
@@ -40,7 +47,7 @@ function IndexerSettings() {
 
   const fetchIndexers = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/indexer');
+      const res = await fetch('/api/v1/indexer', { headers: getAuthHeaders() });
       setIndexers(await res.json());
     } catch {
       setError('Failed to load indexers');
@@ -72,7 +79,7 @@ function IndexerSettings() {
       const url = editId ? `/api/v1/indexer/${editId}` : '/api/v1/indexer';
       await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(body),
       });
       setShowForm(false);
@@ -100,7 +107,7 @@ function IndexerSettings() {
   };
 
   const handleDelete = async (id: number) => {
-    await fetch(`/api/v1/indexer/${id}`, { method: 'DELETE' });
+    await fetch(`/api/v1/indexer/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
     fetchIndexers();
   };
 

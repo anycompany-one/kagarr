@@ -1,0 +1,311 @@
+/* GeneralSettings — Mission Control aesthetic */
+
+.general-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Section titles */
+.gs-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.gs-section-label h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.gs-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
+}
+
+/* API Key panel */
+.gs-apikey-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.gs-apikey-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.gs-apikey-input {
+  flex: 1;
+  padding: 0.6rem 0.85rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.gs-apikey-input:focus {
+  border-color: var(--accent);
+}
+
+.gs-apikey-input::placeholder {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+.gs-apikey-hint {
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.gs-apikey-hint code {
+  background: var(--bg-input);
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.85em;
+  color: var(--text-secondary);
+}
+
+.gs-apikey-saved {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--success);
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-left: 0.5rem;
+  animation: gs-saved-in 0.3s ease-out;
+}
+
+@keyframes gs-saved-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Health checks section */
+.gs-health-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+/* Service card */
+.gs-service {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.gs-service:hover {
+  border-color: rgba(59, 130, 246, 0.25);
+  background: rgba(30, 42, 69, 0.8);
+}
+
+.gs-service--success {
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.gs-service--failed {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+/* Status indicator — the heartbeat */
+.gs-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.gs-status-dot--idle {
+  background: var(--text-muted);
+  opacity: 0.5;
+}
+
+.gs-status-dot--testing {
+  background: var(--accent);
+  animation: gs-pulse 1.2s ease-in-out infinite;
+}
+
+.gs-status-dot--success {
+  background: var(--success);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.gs-status-dot--failed {
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+
+@keyframes gs-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* Service info */
+.gs-service-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.gs-service-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.gs-service-type {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+  margin-top: 0.1rem;
+}
+
+/* Result message */
+.gs-service-result {
+  font-size: 0.78rem;
+  margin-top: 0.25rem;
+  line-height: 1.35;
+}
+
+.gs-service-result--success {
+  color: var(--success);
+}
+
+.gs-service-result--failed {
+  color: #fca5a5;
+}
+
+/* Test button */
+.gs-test-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gs-test-btn:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.gs-test-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.gs-test-btn:disabled:hover {
+  border-color: var(--border);
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+}
+
+/* Test All header button */
+.gs-test-all-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gs-test-all-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.gs-test-all-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Subgroup label */
+.gs-subgroup {
+  margin-top: 0.5rem;
+}
+
+.gs-subgroup-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  padding-left: 0.25rem;
+}
+
+/* Empty state for no configured services */
+.gs-empty-note {
+  padding: 0.75rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-style: italic;
+  background: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+/* Staggered entrance */
+.gs-service {
+  animation: gs-slide-in 0.25s ease-out both;
+}
+
+.gs-service:nth-child(1) { animation-delay: 0.02s; }
+.gs-service:nth-child(2) { animation-delay: 0.05s; }
+.gs-service:nth-child(3) { animation-delay: 0.08s; }
+.gs-service:nth-child(4) { animation-delay: 0.11s; }
+.gs-service:nth-child(5) { animation-delay: 0.14s; }
+.gs-service:nth-child(6) { animation-delay: 0.17s; }
+
+@keyframes gs-slide-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 600px) {
+  .gs-apikey-row {
+    flex-direction: column;
+  }
+}

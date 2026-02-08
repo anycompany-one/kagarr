@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 
+function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const key = localStorage.getItem('kagarr_api_key');
+  if (key) headers['X-Api-Key'] = key;
+  return headers;
+}
+
 interface DownloadClientResource {
   id: number;
   name: string;
@@ -46,7 +53,7 @@ function DownloadClientSettings() {
 
   const fetchClients = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/downloadclient');
+      const res = await fetch('/api/v1/downloadclient', { headers: getAuthHeaders() });
       setClients(await res.json());
     } catch {
       setError('Failed to load download clients');
@@ -78,7 +85,7 @@ function DownloadClientSettings() {
       const url = editId ? `/api/v1/downloadclient/${editId}` : '/api/v1/downloadclient';
       await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(body),
       });
       setShowForm(false);
@@ -109,7 +116,7 @@ function DownloadClientSettings() {
   };
 
   const handleDelete = async (id: number) => {
-    await fetch(`/api/v1/downloadclient/${id}`, { method: 'DELETE' });
+    await fetch(`/api/v1/downloadclient/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
     fetchClients();
   };
 

@@ -5,12 +5,14 @@ using Kagarr.Core.Deals.Sources;
 using Kagarr.Core.Download;
 using Kagarr.Core.Games;
 using Kagarr.Core.Indexers;
+using Kagarr.Core.Jobs;
 using Kagarr.Core.MediaCovers;
 using Kagarr.Core.MediaFiles;
 using Kagarr.Core.MetadataSource;
 using Kagarr.Core.MetadataSource.Igdb;
 using Kagarr.Core.Notifications;
 using Kagarr.Core.Wishlist;
+using Kagarr.Host.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -40,6 +42,9 @@ namespace Kagarr.Host
             // Get data path
             var dataPath = GetDataPath(args);
             global::System.IO.Directory.CreateDirectory(dataPath);
+
+            // Initialize API key (generates on first run, logs to console)
+            ApiKeyService.GetOrCreateApiKey(dataPath);
 
             var dbPath = global::System.IO.Path.Combine(dataPath, "kagarr.db");
             var connectionString = $"Data Source={dbPath}";
@@ -76,6 +81,9 @@ namespace Kagarr.Host
             builder.Services.AddSingleton<IDealSource, ItadDealSource>();
             builder.Services.AddSingleton<IDealService, DealService>();
 
+            // Background jobs
+            builder.Services.AddHostedService<DealCheckJob>();
+
             // Register metadata source services
             builder.Services.AddSingleton<IIgdbAuthService, IgdbAuthService>();
             builder.Services.AddSingleton<ISearchForNewGame, IgdbProxy>();
@@ -107,6 +115,7 @@ namespace Kagarr.Host
 
             // Configure middleware
             app.UseRouting();
+            app.UseMiddleware<ApiKeyMiddleware>();
 
             // Serve static files from UI folder if it exists
             var uiPath = global::System.IO.Path.Combine(global::System.AppContext.BaseDirectory, "UI");

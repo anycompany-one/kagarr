@@ -1,4 +1,5 @@
 import { NavLink, Routes, Route, Navigate } from 'react-router-dom';
+import GeneralSettings from './GeneralSettings';
 import IndexerSettings from './IndexerSettings';
 import DownloadClientSettings from './DownloadClientSettings';
 
@@ -10,6 +11,12 @@ function Settings() {
       </div>
       <div className="settings-layout">
         <nav className="settings-sidebar">
+          <NavLink
+            to="/settings/general"
+            className={({ isActive }) => `settings-nav-item ${isActive ? 'active' : ''}`}
+          >
+            General
+          </NavLink>
           <NavLink
             to="/settings/indexers"
             className={({ isActive }) => `settings-nav-item ${isActive ? 'active' : ''}`}
@@ -25,9 +32,10 @@ function Settings() {
         </nav>
         <div className="settings-content">
           <Routes>
+            <Route path="general" element={<GeneralSettings />} />
             <Route path="indexers" element={<IndexerSettings />} />
             <Route path="downloadclients" element={<DownloadClientSettings />} />
-            <Route path="*" element={<Navigate to="indexers" replace />} />
+            <Route path="*" element={<Navigate to="general" replace />} />
           </Routes>
         </div>
       </div>
