@@ -29,7 +29,7 @@ RUN dotnet restore src/Kagarr.sln
 
 # Copy everything and build
 COPY src/ src/
-RUN dotnet publish src/Kagarr.Console/Kagarr.Console.csproj -c Release -o /app --no-restore /p:EnableAnalyzers=false
+RUN dotnet publish src/Kagarr.Console/Kagarr.Console.csproj -c Release -o /app --no-restore /p:RunAnalyzers=false
 
 # Copy built frontend into the app output
 COPY --from=frontend /src/Kagarr.Host/UI /app/UI
