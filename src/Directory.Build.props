@@ -1,0 +1,101 @@
+<Project>
+  <!-- Common to all Kagarr Projects -->
+  <PropertyGroup>
+    <AnalysisLevel>8.0-all</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+    <RuntimeIdentifiers>win-x64;osx-x64;osx-arm64;linux-x64;linux-musl-x64;linux-arm64;linux-musl-arm64</RuntimeIdentifiers>
+
+    <KagarrRootDir>$(MSBuildThisFileDirectory)..\</KagarrRootDir>
+
+    <!-- Specifies the type of output -->
+    <KagarrOutputType>Library</KagarrOutputType>
+    <KagarrOutputType Condition="$(MSBuildProjectName.Contains('.Test'))">Test</KagarrOutputType>
+    <KagarrOutputType Condition="'$(MSBuildProjectName)'=='Kagarr.Console'">Exe</KagarrOutputType>
+    <KagarrOutputType Condition="'$(MSBuildProjectName)'=='Kagarr.Update'">Update</KagarrOutputType>
+
+    <!-- Specifies whether it's one of our own libraries -->
+    <KagarrProject>false</KagarrProject>
+    <KagarrProject Condition="$(MSBuildProjectName.StartsWith('Kagarr'))">true</KagarrProject>
+
+    <!-- A test project gets the test sdk packages automatically added -->
+    <TestProject>false</TestProject>
+    <TestProject Condition="$(MSBuildProjectName.Contains('.Test'))">true</TestProject>
+
+    <!-- XML documentation comments -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CA1002;CA1032;CA1051;CA1056;CA1062;CA1304;CA1305;CA1307;CA1308;CA1310;CA1311;CA1707;CA1716;CA1822;CA1854;CA1852;CA2007;CA2227;CA2234</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)'==''">Release</Configuration>
+    <BaseIntermediateOutputPath>$(KagarrRootDir)_temp\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(KagarrRootDir)_temp\obj\$(MSBuildProjectName)\$(Configuration)\</IntermediateOutputPath>
+    <OutputPath>$(KagarrRootDir)_temp\bin\$(Configuration)\$(MSBuildProjectName)\</OutputPath>
+
+    <OutputPath Condition="'$(KagarrProject)'=='true'">$(KagarrRootDir)_output\</OutputPath>
+    <OutputPath Condition="'$(KagarrOutputType)'=='Test'">$(KagarrRootDir)_tests\</OutputPath>
+    <OutputPath Condition="'$(KagarrOutputType)'=='Update'">$(KagarrRootDir)_output\Kagarr.Update\</OutputPath>
+
+    <EnableBaseIntermediateOutputPathMismatchWarning>false</EnableBaseIntermediateOutputPathMismatchWarning>
+    <BaseIntermediateOutputPath>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)'))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)'))</IntermediateOutputPath>
+    <OutputPath>$([MSBuild]::MakeRelative('$(MSBuildProjectDirectory)', '$(OutputPath)'))</OutputPath>
+
+    <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <!-- Test projects need bindingRedirects -->
+  <PropertyGroup Condition="'$(KagarrOutputType)'=='Test'">
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <SelfContained>false</SelfContained>
+  </PropertyGroup>
+
+  <!-- Set the Product and Version info -->
+  <PropertyGroup Condition="'$(KagarrProject)'=='true'">
+    <Product>Kagarr</Product>
+    <Company>anycompany.one</Company>
+    <Copyright>Copyright 2024-$([System.DateTime]::Now.ToString('yyyy')) anycompany.one (GNU General Public v3)</Copyright>
+
+    <AssemblyVersion>10.0.0.*</AssemblyVersion>
+    <AssemblyConfiguration>$(Configuration)-dev</AssemblyConfiguration>
+    <NeutralLanguage>en</NeutralLanguage>
+
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+
+    <Deterministic Condition="$(AssemblyVersion.EndsWith('*'))">False</Deterministic>
+
+    <PathMap>$(MSBuildProjectDirectory)=./$(MSBuildProjectName)/</PathMap>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(KagarrProject)'=='true'">
+    <AssemblyAttribute Include="System.Reflection.AssemblyConfigurationAttribute">
+      <_Parameter1>$(AssemblyConfiguration)</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <!-- Standard testing packages -->
+  <ItemGroup Condition="'$(TestProject)'=='true'">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="NUnit" Version="4.1.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageReference Include="coverlet.collector" Version="6.0.2" />
+  </ItemGroup>
+
+  <!-- Set up stylecop for our projects -->
+  <ItemGroup Condition="'$(KagarrProject)'=='true' and '$(EnableAnalyzers)'!='false'">
+    <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+    <AdditionalFiles Include="$(KagarrRootDir)stylecop.json" />
+  </ItemGroup>
+
+</Project>

@@ -417,5 +417,10 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
+# Build output directories
+_output/
+_tests/
+_temp/
+
 # Reference repos (local only — never push these)
 references/

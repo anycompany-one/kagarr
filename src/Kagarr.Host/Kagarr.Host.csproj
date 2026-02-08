@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="DryIoc.dll" Version="5.4.3" />
+    <PackageReference Include="DryIoc.Microsoft.DependencyInjection" Version="6.2.0" />
+    <PackageReference Include="FluentMigrator.Runner" Version="6.2.0" />
+    <PackageReference Include="FluentMigrator.Runner.SQLite" Version="6.2.0" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.3.15" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Kagarr.Common\Kagarr.Common.csproj" />
+    <ProjectReference Include="..\Kagarr.Core\Kagarr.Core.csproj" />
+    <ProjectReference Include="..\Kagarr.SignalR\Kagarr.SignalR.csproj" />
+    <ProjectReference Include="..\Kagarr.Api.V1\Kagarr.Api.V1.csproj" />
+    <ProjectReference Include="..\Kagarr.Http\Kagarr.Http.csproj" />
+  </ItemGroup>
+</Project>
