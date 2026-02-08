@@ -23,5 +23,6 @@
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
   <Config Name="IGDB Client ID" Target="KAGARR_IGDB_CLIENT_ID" Default="" Mode="" Description="Twitch/IGDB Client ID for game metadata" Type="Variable" Display="always" Required="false" Mask="false"/>
   <Config Name="IGDB Client Secret" Target="KAGARR_IGDB_CLIENT_SECRET" Default="" Mode="" Description="Twitch/IGDB Client Secret" Type="Variable" Display="always" Required="false" Mask="true"/>
-  <Config Name="Discord Webhook" Target="KAGARR_DISCORD_WEBHOOK" Default="" Mode="" Description="Discord webhook URL for notifications" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="ITAD API Key" Target="KAGARR_ITAD_API_KEY" Default="" Mode="" Description="IsThereAnyDeal API key for game deal tracking (get one at isthereanydeal.com)" Type="Variable" Display="always" Required="false" Mask="true"/>
+  <Config Name="Discord Webhook" Target="KAGARR_DISCORD_WEBHOOK" Default="" Mode="" Description="Discord webhook URL for notifications and deal alerts" Type="Variable" Display="always" Required="false" Mask="false"/>
 </Container>

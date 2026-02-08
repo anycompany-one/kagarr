@@ -1,5 +1,7 @@
 using FluentMigrator.Runner;
 using Kagarr.Core.Datastore;
+using Kagarr.Core.Deals;
+using Kagarr.Core.Deals.Sources;
 using Kagarr.Core.Download;
 using Kagarr.Core.Games;
 using Kagarr.Core.Indexers;
@@ -8,6 +10,7 @@ using Kagarr.Core.MediaFiles;
 using Kagarr.Core.MetadataSource;
 using Kagarr.Core.MetadataSource.Igdb;
 using Kagarr.Core.Notifications;
+using Kagarr.Core.Wishlist;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -62,6 +65,16 @@ namespace Kagarr.Host
 
             // Register notification services
             builder.Services.AddSingleton<INotificationService, DiscordWebhookService>();
+
+            // Register wishlist services
+            builder.Services.AddSingleton<IWishlistRepository, WishlistRepository>();
+            builder.Services.AddSingleton<IWishlistService, WishlistService>();
+
+            // Register deal tracking services
+            builder.Services.AddSingleton<IDealSnapshotRepository, DealSnapshotRepository>();
+            builder.Services.AddSingleton<IDealSource, SteamDealSource>();
+            builder.Services.AddSingleton<IDealSource, ItadDealSource>();
+            builder.Services.AddSingleton<IDealService, DealService>();
 
             // Register metadata source services
             builder.Services.AddSingleton<IIgdbAuthService, IgdbAuthService>();

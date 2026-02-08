@@ -1,7 +1,10 @@
+using System.Globalization;
 using System.Net.Http;
 using System.Text;
 using Kagarr.Common.Instrumentation;
+using Kagarr.Core.Deals;
 using Kagarr.Core.Games;
+using Kagarr.Core.Wishlist;
 using Newtonsoft.Json;
 using NLog;
 
@@ -22,7 +25,7 @@ namespace Kagarr.Core.Notifications
                 "Game Added",
                 $"**{game.Title}** ({game.Year}) has been added to the library.",
                 3447003,
-                game);
+                game.Images?.Find(i => i.CoverType == MediaCoverTypes.Cover)?.RemoteUrl);
         }
 
         public void OnGameFileImported(Game game, string filePath)
@@ -32,7 +35,7 @@ namespace Kagarr.Core.Notifications
                 "Game Imported",
                 $"**{game.Title}** has been imported.\nFile: `{fileName}`",
                 2278750,
-                game);
+                game.Images?.Find(i => i.CoverType == MediaCoverTypes.Cover)?.RemoteUrl);
         }
 
         public void OnGameGrabbed(Game game, string releaseTitle)
@@ -41,10 +44,39 @@ namespace Kagarr.Core.Notifications
                 "Game Grabbed",
                 $"**{game.Title}** release grabbed.\nRelease: `{releaseTitle}`",
                 15844367,
-                game);
+                game.Images?.Find(i => i.CoverType == MediaCoverTypes.Cover)?.RemoteUrl);
         }
 
-        private void SendNotification(string title, string description, int color, Game game)
+        public void OnDealFound(WishlistItem item, GameDeal deal)
+        {
+            var priceText = deal.IsFree
+                ? "**FREE**"
+                : string.Format(CultureInfo.InvariantCulture, "**${0:F2}**", deal.CurrentPrice);
+
+            var description = $"**{item.Title}** is on sale at **{deal.Store}**!\n" +
+                              $"Price: {priceText}";
+
+            if (deal.DiscountPercent > 0)
+            {
+                description += string.Format(
+                    CultureInfo.InvariantCulture,
+                    " ({0}% off, was ${1:F2})",
+                    deal.DiscountPercent,
+                    deal.RegularPrice);
+            }
+
+            if (!string.IsNullOrWhiteSpace(deal.DealUrl))
+            {
+                description += $"\n[View Deal]({deal.DealUrl})";
+            }
+
+            var coverUrl = item.Images?.Find(i => i.CoverType == MediaCoverTypes.Cover)?.RemoteUrl;
+
+            // Gold color for deal alerts
+            SendNotification("Deal Alert", description, 16766720, coverUrl);
+        }
+
+        private void SendNotification(string title, string description, int color, string coverUrl)
         {
             var webhookUrl = global::System.Environment.GetEnvironmentVariable("KAGARR_DISCORD_WEBHOOK");
             if (string.IsNullOrWhiteSpace(webhookUrl))
@@ -54,8 +86,6 @@ namespace Kagarr.Core.Notifications
 
             try
             {
-                var coverUrl = game.Images?.Find(i => i.CoverType == MediaCoverTypes.Cover)?.RemoteUrl;
-
                 var embed = new
                 {
                     title,

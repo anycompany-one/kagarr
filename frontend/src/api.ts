@@ -1,4 +1,4 @@
-import { GameResource } from './types';
+import { GameResource, WishlistResource, DealResource } from './types';
 
 const API_BASE = '/api/v1';
 
@@ -49,4 +49,47 @@ export function searchGames(term: string): Promise<GameResource[]> {
 
 export function lookupGame(igdbId: number): Promise<GameResource> {
   return request<GameResource>(`/game/lookup/${igdbId}`);
+}
+
+// Wishlist
+export function getWishlist(): Promise<WishlistResource[]> {
+  return request<WishlistResource[]>('/wishlist');
+}
+
+export function getWishlistItem(id: number): Promise<WishlistResource> {
+  return request<WishlistResource>(`/wishlist/${id}`);
+}
+
+export function addToWishlist(item: Partial<WishlistResource>): Promise<WishlistResource> {
+  return request<WishlistResource>('/wishlist', {
+    method: 'POST',
+    body: JSON.stringify(item),
+  });
+}
+
+export function updateWishlistItem(
+  id: number,
+  item: Partial<WishlistResource>,
+): Promise<WishlistResource> {
+  return request<WishlistResource>(`/wishlist/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(item),
+  });
+}
+
+export function removeFromWishlist(id: number): Promise<void> {
+  return request<void>(`/wishlist/${id}`, { method: 'DELETE' });
+}
+
+// Deals
+export function getDeals(wishlistItemId: number): Promise<DealResource> {
+  return request<DealResource>(`/deal/${wishlistItemId}`);
+}
+
+export function checkDeals(wishlistItemId: number): Promise<DealResource> {
+  return request<DealResource>(`/deal/${wishlistItemId}/check`, { method: 'POST' });
+}
+
+export function checkAllDeals(): Promise<DealResource[]> {
+  return request<DealResource[]>('/deal/check', { method: 'POST' });
 }

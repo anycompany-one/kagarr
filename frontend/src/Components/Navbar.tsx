@@ -23,6 +23,12 @@ function Navbar() {
           Add Game
         </NavLink>
         <NavLink
+          to="/wishlist"
+          className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
+        >
+          Wishlist
+        </NavLink>
+        <NavLink
           to="/settings"
           className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
         >
