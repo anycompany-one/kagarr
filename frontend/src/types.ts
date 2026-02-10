@@ -71,3 +71,41 @@ export interface DealResource {
   lastChecked: string;
   deals: GameDealResource[];
 }
+
+export interface ReleaseResource {
+  guid: string;
+  title: string;
+  size: number;
+  downloadUrl: string;
+  infoUrl: string;
+  indexer: string;
+  indexerId: number;
+  downloadProtocol: string;
+  publishDate: string;
+  seeders: number;
+  leechers: number;
+  categories: string[];
+}
+
+export interface QueueResource {
+  downloadId: string;
+  title: string;
+  totalSize: number;
+  remainingSize: number;
+  outputPath: string;
+  status: string;
+  downloadClient: string;
+}
+
+export interface ManualImportRequest {
+  path: string;
+  gameId: number;
+  files?: string[];
+}
+
+export interface ImportResultResource {
+  success: boolean;
+  sourcePath: string;
+  destinationPath: string;
+  errors: string[];
+}

@@ -29,6 +29,12 @@ function Navbar() {
           Wishlist
         </NavLink>
         <NavLink
+          to="/activity"
+          className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
+        >
+          Activity
+        </NavLink>
+        <NavLink
           to="/settings"
           className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
         >

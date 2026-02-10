@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { GameResource } from '../types';
 
 interface GameCardProps {
@@ -11,8 +12,8 @@ function GameCard({ game, onDelete, onAdd, isSearchResult }: GameCardProps) {
   const coverImage = game.images?.find((i) => i.coverType === 'Cover');
   const coverUrl = coverImage?.remoteUrl || coverImage?.url;
 
-  return (
-    <div className="game-card">
+  const cardContent = (
+    <>
       <div className="game-card-poster">
         {coverUrl ? (
           <img src={coverUrl} alt={game.title} loading="lazy" />
@@ -25,7 +26,11 @@ function GameCard({ game, onDelete, onAdd, isSearchResult }: GameCardProps) {
           {isSearchResult && onAdd && (
             <button
               className="btn btn-sm btn-primary"
-              onClick={() => onAdd(game)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAdd(game);
+              }}
             >
               + Add
             </button>
@@ -33,7 +38,11 @@ function GameCard({ game, onDelete, onAdd, isSearchResult }: GameCardProps) {
           {!isSearchResult && onDelete && game.id > 0 && (
             <button
               className="btn btn-sm btn-danger"
-              onClick={() => onDelete(game.id)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete(game.id);
+              }}
             >
               Remove
             </button>
@@ -54,7 +63,18 @@ function GameCard({ game, onDelete, onAdd, isSearchResult }: GameCardProps) {
           <div className="game-card-developer">{game.developer}</div>
         )}
       </div>
-    </div>
+    </>
+  );
+
+  // Search results aren't in the library yet — no detail page to link to
+  if (isSearchResult) {
+    return <div className="game-card">{cardContent}</div>;
+  }
+
+  return (
+    <Link to={`/game/${game.id}`} className="game-card" style={{ textDecoration: 'none', color: 'inherit' }}>
+      {cardContent}
+    </Link>
   );
 }
 

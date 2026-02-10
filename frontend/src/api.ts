@@ -1,4 +1,12 @@
-import { GameResource, WishlistResource, DealResource } from './types';
+import {
+  GameResource,
+  WishlistResource,
+  DealResource,
+  ReleaseResource,
+  QueueResource,
+  ManualImportRequest,
+  ImportResultResource,
+} from './types';
 
 const API_BASE = '/api/v1';
 
@@ -116,6 +124,35 @@ export function checkDeals(wishlistItemId: number): Promise<DealResource> {
 
 export function checkAllDeals(): Promise<DealResource[]> {
   return request<DealResource[]>('/deal/check', { method: 'POST' });
+}
+
+// Releases (indexer search + grab)
+export function searchReleases(term: string): Promise<ReleaseResource[]> {
+  return request<ReleaseResource[]>(`/release?term=${encodeURIComponent(term)}`);
+}
+
+export function grabRelease(release: ReleaseResource): Promise<{ downloadId: string }> {
+  return request<{ downloadId: string }>('/release', {
+    method: 'POST',
+    body: JSON.stringify(release),
+  });
+}
+
+// Queue
+export function getQueue(): Promise<QueueResource[]> {
+  return request<QueueResource[]>('/queue');
+}
+
+// Manual import
+export function scanForImport(path: string): Promise<string[]> {
+  return request<string[]>(`/manualimport?path=${encodeURIComponent(path)}`);
+}
+
+export function importFiles(req: ManualImportRequest): Promise<ImportResultResource[]> {
+  return request<ImportResultResource[]>('/manualimport', {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
 }
 
 // Health checks
