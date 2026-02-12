@@ -11,15 +11,17 @@ namespace Kagarr.Core.MediaFiles
     public class GameFileImportService : IImportGameFile
     {
         private readonly IGameService _gameService;
+        private readonly IDiskTransferService _diskTransferService;
         private readonly Logger _logger;
 
-        public GameFileImportService(IGameService gameService)
+        public GameFileImportService(IGameService gameService, IDiskTransferService diskTransferService)
         {
             _gameService = gameService;
+            _diskTransferService = diskTransferService;
             _logger = KagarrLogger.GetLogger(this);
         }
 
-        public ImportResult Import(string sourcePath, int gameId)
+        public ImportResult Import(string sourcePath, int gameId, TransferMode transferMode = TransferMode.Move)
         {
             var result = new ImportResult
             {
@@ -66,16 +68,10 @@ namespace Kagarr.Core.MediaFiles
                 var fileName = FileNameBuilder.BuildGameFileName(game, sourcePath);
                 var destinationPath = global::System.IO.Path.Combine(gameFolderPath, fileName);
 
-                _logger.Info("Importing '{0}' to '{1}'", sourcePath, destinationPath);
+                _logger.Info("Importing '{0}' to '{1}' (mode: {2})", sourcePath, destinationPath, transferMode);
 
-                // Move the file
-                if (global::System.IO.File.Exists(destinationPath))
-                {
-                    _logger.Warn("Destination file already exists, removing: {0}", destinationPath);
-                    global::System.IO.File.Delete(destinationPath);
-                }
-
-                global::System.IO.File.Move(sourcePath, destinationPath);
+                var actualMode = _diskTransferService.TransferFile(sourcePath, destinationPath, transferMode);
+                _logger.Info("Transfer completed using {0}", actualMode);
 
                 // Create GameFile record
                 var gameFile = new GameFile
@@ -106,14 +102,14 @@ namespace Kagarr.Core.MediaFiles
             return result;
         }
 
-        public List<ImportResult> ImportFolder(string folderPath, int gameId)
+        public List<ImportResult> ImportFolder(string folderPath, int gameId, TransferMode transferMode = TransferMode.Move)
         {
             _logger.Info("Scanning folder for import: {0}", folderPath);
 
             var gameFiles = ScanForGameFiles(folderPath);
             _logger.Info("Found {0} game files in '{1}'", gameFiles.Count, folderPath);
 
-            return gameFiles.Select(f => Import(f, gameId)).ToList();
+            return gameFiles.Select(f => Import(f, gameId, transferMode)).ToList();
         }
 
         public List<string> ScanForGameFiles(string path)

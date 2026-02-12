@@ -38,7 +38,7 @@ namespace Kagarr.Core.Test.Jobs
 
             _trackingRepo.Setup(r => r.FindByDownloadId("abc123")).Returns(tracking);
 
-            _importService.Setup(s => s.Import("/downloads/bg3.iso", 42))
+            _importService.Setup(s => s.Import("/downloads/bg3.iso", 42, It.IsAny<TransferMode>()))
                 .Returns(new ImportResult { Success = true, SourcePath = "/downloads/bg3.iso" });
 
             var item = new DownloadClientItem
@@ -69,7 +69,7 @@ namespace Kagarr.Core.Test.Jobs
             result.Should().BeNull();
 
             // Verify import is never called for untracked downloads
-            _importService.Verify(s => s.Import(It.IsAny<string>(), It.IsAny<int>()), Times.Never);
+            _importService.Verify(s => s.Import(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<TransferMode>()), Times.Never);
         }
 
         [Test]
@@ -86,7 +86,7 @@ namespace Kagarr.Core.Test.Jobs
 
             _trackingRepo.Setup(r => r.FindByDownloadId("fail-123")).Returns(tracking);
 
-            _importService.Setup(s => s.Import(It.IsAny<string>(), 10))
+            _importService.Setup(s => s.Import(It.IsAny<string>(), 10, It.IsAny<TransferMode>()))
                 .Returns(new ImportResult
                 {
                     Success = false,

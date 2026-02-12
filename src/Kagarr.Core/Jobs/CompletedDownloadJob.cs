@@ -106,10 +106,15 @@ namespace Kagarr.Core.Jobs
                 return;
             }
 
+            // Auto mode: torrent clients need hardlink-or-copy to keep seeding, usenet uses move
+            var transferMode = string.Equals(item.DownloadProtocol, "torrent", global::System.StringComparison.OrdinalIgnoreCase)
+                ? TransferMode.HardLinkOrCopy
+                : TransferMode.Move;
+
             // Try folder import first (most downloads extract to folders), fall back to single file
             var results = global::System.IO.Directory.Exists(item.OutputPath)
-                ? _importService.ImportFolder(item.OutputPath, tracking.GameId)
-                : new global::System.Collections.Generic.List<ImportResult> { _importService.Import(item.OutputPath, tracking.GameId) };
+                ? _importService.ImportFolder(item.OutputPath, tracking.GameId, transferMode)
+                : new global::System.Collections.Generic.List<ImportResult> { _importService.Import(item.OutputPath, tracking.GameId, transferMode) };
 
             var anySuccess = results.Any(r => r.Success);
 

@@ -11,13 +11,15 @@ namespace Kagarr.Core.Test.MediaFiles
     public class GameFileImportServiceTests
     {
         private Mock<IGameService> _gameService;
+        private Mock<IDiskTransferService> _diskTransferService;
         private GameFileImportService _importService;
 
         [SetUp]
         public void Setup()
         {
             _gameService = new Mock<IGameService>();
-            _importService = new GameFileImportService(_gameService.Object);
+            _diskTransferService = new Mock<IDiskTransferService>();
+            _importService = new GameFileImportService(_gameService.Object, _diskTransferService.Object);
         }
 
         [Test]

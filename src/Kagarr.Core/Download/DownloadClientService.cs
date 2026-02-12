@@ -132,7 +132,13 @@ namespace Kagarr.Core.Download
                         continue;
                     }
 
-                    allItems.AddRange(client.GetItems());
+                    var items = client.GetItems();
+                    foreach (var item in items)
+                    {
+                        item.DownloadProtocol = definition.Protocol;
+                    }
+
+                    allItems.AddRange(items);
                 }
                 catch (Exception ex)
                 {
