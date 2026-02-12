@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using FluentAssertions;
 using Kagarr.Core.Games;
+using Kagarr.Core.History;
 using Kagarr.Core.Platforms;
 using Moq;
 using NUnit.Framework;
@@ -11,13 +12,15 @@ namespace Kagarr.Core.Test.Games
     public class GameServiceTests
     {
         private Mock<IGameRepository> _gameRepository;
+        private Mock<IHistoryService> _historyService;
         private GameService _gameService;
 
         [SetUp]
         public void Setup()
         {
             _gameRepository = new Mock<IGameRepository>();
-            _gameService = new GameService(_gameRepository.Object);
+            _historyService = new Mock<IHistoryService>();
+            _gameService = new GameService(_gameRepository.Object, _historyService.Object);
         }
 
         [Test]
