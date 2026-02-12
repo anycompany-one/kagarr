@@ -36,10 +36,12 @@ namespace Kagarr.Host
             builder.Logging.ClearProviders();
             builder.Logging.AddNLog();
 
-            // Configure Kestrel port
+            // Configure Kestrel port and bind address
+            var port = GetPort(args);
+            var bindAddress = GetBindAddress(args);
             builder.WebHost.ConfigureKestrel(options =>
             {
-                options.ListenAnyIP(6767);
+                options.Listen(global::System.Net.IPAddress.Parse(bindAddress), port);
             });
 
             // Get data path
@@ -228,11 +230,58 @@ namespace Kagarr.Host
                 app.MapFallback(async context =>
                 {
                     context.Response.ContentType = "text/html";
-                    await context.Response.WriteAsync("<html><body style='font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0'><div style='text-align:center'><h1>Kagarr</h1><p style='color:#888'>API running on port 6767. Build the frontend to see the UI.</p></div></body></html>");
+                    await context.Response.WriteAsync($"<html><body style='font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0'><div style='text-align:center'><h1>Kagarr</h1><p style='color:#888'>API running on port {port}. Build the frontend to see the UI.</p></div></body></html>");
                 });
             }
 
             return app;
+        }
+
+        private static int GetPort(string[] args)
+        {
+            // Check for --port= argument (highest priority)
+            foreach (var arg in args)
+            {
+                var trimmed = arg.Trim('-', '/');
+                if (trimmed.StartsWith("port=", global::System.StringComparison.OrdinalIgnoreCase))
+                {
+                    if (int.TryParse(global::System.MemoryExtensions.AsSpan(trimmed, 5), out var cliPort) && cliPort > 0 && cliPort <= 65535)
+                    {
+                        return cliPort;
+                    }
+                }
+            }
+
+            // Check KAGARR_PORT environment variable
+            var envPort = global::System.Environment.GetEnvironmentVariable("KAGARR_PORT");
+            if (!string.IsNullOrWhiteSpace(envPort) && int.TryParse(envPort, out var parsedPort) && parsedPort > 0 && parsedPort <= 65535)
+            {
+                return parsedPort;
+            }
+
+            return 6767;
+        }
+
+        private static string GetBindAddress(string[] args)
+        {
+            // Check for --bind= argument (highest priority)
+            foreach (var arg in args)
+            {
+                var trimmed = arg.Trim('-', '/');
+                if (trimmed.StartsWith("bind=", global::System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return trimmed.Substring(5);
+                }
+            }
+
+            // Check KAGARR_BIND_ADDRESS environment variable
+            var envBind = global::System.Environment.GetEnvironmentVariable("KAGARR_BIND_ADDRESS");
+            if (!string.IsNullOrWhiteSpace(envBind))
+            {
+                return envBind;
+            }
+
+            return "0.0.0.0";
         }
 
         private static string GetDataPath(string[] args)
