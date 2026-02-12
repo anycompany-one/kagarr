@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using Kagarr.Common.Instrumentation;
 using Kagarr.Core.Games;
+using Kagarr.Core.Http;
 using Newtonsoft.Json;
 using NLog;
 
@@ -14,13 +16,18 @@ namespace Kagarr.Core.MetadataSource.Igdb
     {
         private const string IgdbApiBaseUrl = "https://api.igdb.com/v4";
         private const string IgdbImageBaseUrl = "https://images.igdb.com/igdb/image/upload";
+        private const int MaxRetries = 2;
+
+        private static readonly TimeSpan IgdbRateInterval = TimeSpan.FromMilliseconds(250);
 
         private readonly IIgdbAuthService _authService;
+        private readonly IRateLimitService _rateLimitService;
         private readonly Logger _logger;
 
-        public IgdbProxy(IIgdbAuthService authService)
+        public IgdbProxy(IIgdbAuthService authService, IRateLimitService rateLimitService)
         {
             _authService = authService;
+            _rateLimitService = rateLimitService;
             _logger = KagarrLogger.GetLogger(this);
         }
 
@@ -66,29 +73,44 @@ namespace Kagarr.Core.MetadataSource.Igdb
             var token = _authService.GetAccessToken();
             var clientId = _authService.GetClientId();
 
-            using (var httpClient = new HttpClient())
+            for (var attempt = 0; attempt <= MaxRetries; attempt++)
             {
-                httpClient.DefaultRequestHeaders.Add("Client-ID", clientId);
-                httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+                _rateLimitService.WaitAndPulse("igdb", IgdbRateInterval);
 
-                using (var content = new StringContent(body, Encoding.UTF8, "text/plain"))
+                using (var httpClient = new HttpClient())
                 {
-                    var url = $"{IgdbApiBaseUrl}/{endpoint}";
+                    httpClient.DefaultRequestHeaders.Add("Client-ID", clientId);
+                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
 
-                    _logger.Debug("IGDB API request: POST {0} - {1}", url, body);
-
-                    var response = httpClient.PostAsync(url, content).Result;
-                    var responseBody = response.Content.ReadAsStringAsync().Result;
-
-                    if (!response.IsSuccessStatusCode)
+                    using (var content = new StringContent(body, Encoding.UTF8, "text/plain"))
                     {
-                        _logger.Error("IGDB API error. Status: {0}, Body: {1}", response.StatusCode, responseBody);
-                        throw new HttpRequestException($"IGDB API request failed with status {response.StatusCode}");
-                    }
+                        var url = $"{IgdbApiBaseUrl}/{endpoint}";
 
-                    return JsonConvert.DeserializeObject<List<T>>(responseBody) ?? new List<T>();
+                        _logger.Debug("IGDB API request: POST {0} - {1}", url, body);
+
+                        var response = httpClient.PostAsync(url, content).Result;
+                        var responseBody = response.Content.ReadAsStringAsync().Result;
+
+                        // Retry on 429 Too Many Requests
+                        if ((int)response.StatusCode == 429 && attempt < MaxRetries)
+                        {
+                            _logger.Warn("IGDB rate limited (429), retrying in 1 second (attempt {0}/{1})", attempt + 1, MaxRetries);
+                            Thread.Sleep(1000);
+                            continue;
+                        }
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            _logger.Error("IGDB API error. Status: {0}, Body: {1}", response.StatusCode, responseBody);
+                            throw new HttpRequestException($"IGDB API request failed with status {response.StatusCode}");
+                        }
+
+                        return JsonConvert.DeserializeObject<List<T>>(responseBody) ?? new List<T>();
+                    }
                 }
             }
+
+            return new List<T>();
         }
 
         private static Game MapToGame(IgdbGameResource resource)

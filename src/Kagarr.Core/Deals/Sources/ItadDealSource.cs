@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using Kagarr.Common.Instrumentation;
+using Kagarr.Core.Http;
 using Newtonsoft.Json.Linq;
 using NLog;
 
@@ -9,10 +10,14 @@ namespace Kagarr.Core.Deals.Sources
 {
     public class ItadDealSource : IDealSource
     {
+        private static readonly TimeSpan ItadRateInterval = TimeSpan.FromMilliseconds(250);
+
+        private readonly IRateLimitService _rateLimitService;
         private readonly Logger _logger;
 
-        public ItadDealSource()
+        public ItadDealSource(IRateLimitService rateLimitService)
         {
+            _rateLimitService = rateLimitService;
             _logger = KagarrLogger.GetLogger(this);
         }
 
@@ -35,6 +40,7 @@ namespace Kagarr.Core.Deals.Sources
                     client.DefaultRequestHeaders.Add("User-Agent", "Kagarr/1.0");
 
                     // First find the game's ITAD plain (slug)
+                    _rateLimitService.WaitAndPulse("itad", ItadRateInterval);
                     var encodedTitle = Uri.EscapeDataString(gameTitle);
                     var searchUrl = $"https://api.isthereanydeal.com/v02/search/search/?key={apiKey}&q={encodedTitle}&limit=1";
                     var searchResponse = client.GetStringAsync(searchUrl).Result;
@@ -53,6 +59,7 @@ namespace Kagarr.Core.Deals.Sources
                     }
 
                     // Get current prices
+                    _rateLimitService.WaitAndPulse("itad", ItadRateInterval);
                     var priceUrl = $"https://api.isthereanydeal.com/v01/game/prices/?key={apiKey}&plains={plain}&country=US";
                     var priceResponse = client.GetStringAsync(priceUrl).Result;
                     var priceJson = JObject.Parse(priceResponse);

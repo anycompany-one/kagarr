@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Net.Http;
 using Kagarr.Common.Instrumentation;
+using Kagarr.Core.Http;
 using Newtonsoft.Json.Linq;
 using NLog;
 
@@ -9,10 +11,14 @@ namespace Kagarr.Core.Deals.Sources
 {
     public class SteamDealSource : IDealSource
     {
+        private static readonly TimeSpan SteamRateInterval = TimeSpan.FromMilliseconds(1500);
+
+        private readonly IRateLimitService _rateLimitService;
         private readonly Logger _logger;
 
-        public SteamDealSource()
+        public SteamDealSource(IRateLimitService rateLimitService)
         {
+            _rateLimitService = rateLimitService;
             _logger = KagarrLogger.GetLogger(this);
         }
 
@@ -29,6 +35,8 @@ namespace Kagarr.Core.Deals.Sources
 
             try
             {
+                _rateLimitService.WaitAndPulse("steam", SteamRateInterval);
+
                 using (var client = new HttpClient())
                 {
                     client.DefaultRequestHeaders.Add("User-Agent", "Kagarr/1.0");

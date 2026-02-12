@@ -5,6 +5,7 @@ using Kagarr.Core.Deals.Sources;
 using Kagarr.Core.Download;
 using Kagarr.Core.Games;
 using Kagarr.Core.History;
+using Kagarr.Core.Http;
 using Kagarr.Core.Indexers;
 using Kagarr.Core.Jobs;
 using Kagarr.Core.MediaCovers;
@@ -84,6 +85,9 @@ namespace Kagarr.Host
             // Register wishlist services
             builder.Services.AddSingleton<IWishlistRepository, WishlistRepository>();
             builder.Services.AddSingleton<IWishlistService, WishlistService>();
+
+            // Register HTTP services
+            builder.Services.AddSingleton<IRateLimitService, RateLimitService>();
 
             // Register deal tracking services
             builder.Services.AddSingleton<IDealSnapshotRepository, DealSnapshotRepository>();
