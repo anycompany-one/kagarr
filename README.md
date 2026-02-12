@@ -32,7 +32,7 @@ Kagarr does for games what Sonarr does for TV and Radarr does for movies: search
 ```yaml
 services:
   kagarr:
-    image: ghcr.io/your-org/kagarr:latest
+    image: ghcr.io/anycompany-one/kagarr:latest
     container_name: kagarr
     ports:
       - "6767:6767"
@@ -135,6 +135,10 @@ src/
 frontend/                # React 18 + TypeScript + Vite
 ```
 
+## Backup
+
+Kagarr automatically backs up `kagarr.db` to `kagarr.db.bak` before running database migrations on startup. For additional safety, back up the entire `/config` volume before upgrading to a new version.
+
 ## Roadmap
 
 - Quality profiles (preferred release groups, size limits)
@@ -146,4 +150,4 @@ frontend/                # React 18 + TypeScript + Vite
 
 ## License
 
-This project is not yet licensed for public redistribution. License will be added before the first public release.
+Kagarr is licensed under the [GNU General Public License v3.0](LICENSE), the same license used by Sonarr, Radarr, and Prowlarr.

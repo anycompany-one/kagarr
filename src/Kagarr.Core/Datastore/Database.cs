@@ -10,6 +10,7 @@ namespace Kagarr.Core.Datastore
     public class MainDatabase : IMainDatabase
     {
         private readonly string _connectionString;
+        private bool _walEnabled;
 
         public MainDatabase(string connectionString)
         {
@@ -20,6 +21,19 @@ namespace Kagarr.Core.Datastore
         {
             var connection = new SqliteConnection(_connectionString);
             connection.Open();
+
+            // Enable WAL mode for safe concurrent reads/writes from background jobs + API
+            if (!_walEnabled)
+            {
+                using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "PRAGMA journal_mode=WAL;";
+                    cmd.ExecuteNonQuery();
+                }
+
+                _walEnabled = true;
+            }
+
             return connection;
         }
     }

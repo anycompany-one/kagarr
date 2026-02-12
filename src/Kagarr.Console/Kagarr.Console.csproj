@@ -7,4 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Kagarr.Host\Kagarr.Host.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="nlog.config" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

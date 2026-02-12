@@ -42,7 +42,12 @@ ENV PUID=1000 \
     PGID=1000 \
     KAGARR_DATA=/config
 
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 EXPOSE 6767
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:6767/api/v1/system/status || exit 1
 
 VOLUME ["/config", "/games", "/downloads"]
 

@@ -36,7 +36,6 @@ namespace Kagarr.Host.Authentication
             Environment.SetEnvironmentVariable("KAGARR_API_KEY", newKey);
 
             Logger.Info("Generated new API key. Stored at: {0}", keyPath);
-            Logger.Info("Your API key is: {0}", newKey);
 
             return newKey;
         }

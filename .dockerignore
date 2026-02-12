@@ -1,0 +1,38 @@
+# Git
+.git/
+.gitignore
+
+# Build output
+_output/
+_tests/
+_temp/
+
+# Reference repos (Sonarr, Radarr, Prowlarr sources)
+references/
+
+# Brand assets
+brand/
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+.DS_Store
+*.swp
+
+# Frontend node_modules (rebuilt in Docker)
+frontend/node_modules/
+
+# Runtime data
+*.db
+*.db-wal
+*.db-shm
+*.db.bak
+api_key
+
+# Documentation
+*.md
+!README.md
+
+# CI
+.github/

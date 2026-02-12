@@ -114,6 +114,13 @@ namespace Kagarr.Host
 
             var app = builder.Build();
 
+            // Back up database before running migrations (safety net for alpha upgrades)
+            if (global::System.IO.File.Exists(dbPath))
+            {
+                var backupPath = dbPath + ".bak";
+                global::System.IO.File.Copy(dbPath, backupPath, true);
+            }
+
             // Run migrations
             using (var scope = app.Services.CreateScope())
             {
@@ -164,7 +171,7 @@ namespace Kagarr.Host
 
         private static string GetDataPath(string[] args)
         {
-            // Check for --data= argument
+            // Check for --data= argument (highest priority)
             foreach (var arg in args)
             {
                 var trimmed = arg.Trim('-', '/');
@@ -172,6 +179,13 @@ namespace Kagarr.Host
                 {
                     return trimmed.Substring(5);
                 }
+            }
+
+            // Check KAGARR_DATA environment variable
+            var envData = global::System.Environment.GetEnvironmentVariable("KAGARR_DATA");
+            if (!string.IsNullOrWhiteSpace(envData))
+            {
+                return envData;
             }
 
             // Default: use /config in Docker or AppData locally

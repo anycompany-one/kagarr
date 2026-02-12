@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using Kagarr.Common.Instrumentation;
 using Microsoft.AspNetCore.Http;
@@ -12,19 +14,20 @@ namespace Kagarr.Host.Authentication
 
         private readonly RequestDelegate _next;
         private readonly Logger _logger;
-        private readonly string _apiKey;
 
         public ApiKeyMiddleware(RequestDelegate next)
         {
             _next = next;
             _logger = KagarrLogger.GetLogger(typeof(ApiKeyMiddleware));
-            _apiKey = global::System.Environment.GetEnvironmentVariable("KAGARR_API_KEY");
         }
 
         public async Task InvokeAsync(HttpContext context)
         {
+            // Read key lazily on each request to avoid race condition with ApiKeyService
+            var apiKey = global::System.Environment.GetEnvironmentVariable("KAGARR_API_KEY");
+
             // If no API key is configured, skip auth (open access)
-            if (string.IsNullOrWhiteSpace(_apiKey))
+            if (string.IsNullOrWhiteSpace(apiKey))
             {
                 await _next(context);
                 return;
@@ -57,7 +60,7 @@ namespace Kagarr.Host.Authentication
                 return;
             }
 
-            if (!string.Equals(providedKey, _apiKey, global::System.StringComparison.Ordinal))
+            if (!FixedTimeEquals(providedKey, apiKey))
             {
                 _logger.Warn("Unauthorized API request from {0}: invalid API key", context.Connection.RemoteIpAddress);
                 context.Response.StatusCode = 401;
@@ -67,6 +70,13 @@ namespace Kagarr.Host.Authentication
             }
 
             await _next(context);
+        }
+
+        private static bool FixedTimeEquals(string a, string b)
+        {
+            var aBytes = Encoding.UTF8.GetBytes(a);
+            var bBytes = Encoding.UTF8.GetBytes(b);
+            return CryptographicOperations.FixedTimeEquals(aBytes, bBytes);
         }
     }
 }

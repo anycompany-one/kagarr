@@ -428,3 +428,16 @@ src/Kagarr.Host/UI/
 
 # Reference repos (local only — never push these)
 references/
+
+# macOS
+.DS_Store
+
+# Brand assets (local only)
+brand/
+
+# Runtime data (if using project-relative data path)
+*.db
+*.db-wal
+*.db-shm
+*.db.bak
+api_key
