@@ -1,4 +1,5 @@
 using FluentMigrator.Runner;
+using Kagarr.Core.Backup;
 using Kagarr.Core.Datastore;
 using Kagarr.Core.Deals;
 using Kagarr.Core.Deals.Sources;
@@ -101,9 +102,13 @@ namespace Kagarr.Host
             builder.Services.AddSingleton<IDealSource, ItadDealSource>();
             builder.Services.AddSingleton<IDealService, DealService>();
 
+            // Register backup services
+            builder.Services.AddSingleton<IBackupService>(new BackupService(dataPath));
+
             // Background jobs
             builder.Services.AddHostedService<DealCheckJob>();
             builder.Services.AddHostedService<CompletedDownloadJob>();
+            builder.Services.AddHostedService<BackupJob>();
 
             // Register metadata source services
             builder.Services.AddSingleton<IIgdbAuthService, IgdbAuthService>();
