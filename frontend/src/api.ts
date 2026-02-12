@@ -7,6 +7,7 @@ import {
   ManualImportRequest,
   ImportResultResource,
   HistoryResource,
+  RemotePathMappingResource,
 } from './types';
 
 const API_BASE = '/api/v1';
@@ -204,6 +205,34 @@ export function testNewDownloadClient(config: {
 export function getHistory(gameId?: number): Promise<HistoryResource[]> {
   const query = gameId ? `?gameId=${gameId}` : '';
   return request<HistoryResource[]>(`/history${query}`);
+}
+
+// Remote path mappings
+export function getRemotePathMappings(): Promise<RemotePathMappingResource[]> {
+  return request<RemotePathMappingResource[]>('/remotepathmapping');
+}
+
+export function addRemotePathMapping(
+  mapping: Omit<RemotePathMappingResource, 'id'>,
+): Promise<RemotePathMappingResource> {
+  return request<RemotePathMappingResource>('/remotepathmapping', {
+    method: 'POST',
+    body: JSON.stringify(mapping),
+  });
+}
+
+export function updateRemotePathMapping(
+  id: number,
+  mapping: RemotePathMappingResource,
+): Promise<RemotePathMappingResource> {
+  return request<RemotePathMappingResource>(`/remotepathmapping/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(mapping),
+  });
+}
+
+export function deleteRemotePathMapping(id: number): Promise<void> {
+  return request<void>(`/remotepathmapping/${id}`, { method: 'DELETE' });
 }
 
 // System

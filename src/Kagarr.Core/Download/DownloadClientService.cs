@@ -6,6 +6,7 @@ using Kagarr.Core.Download.Clients.QBittorrent;
 using Kagarr.Core.Download.Clients.Sabnzbd;
 using Kagarr.Core.History;
 using Kagarr.Core.Indexers;
+using Newtonsoft.Json.Linq;
 using NLog;
 
 namespace Kagarr.Core.Download
@@ -133,9 +134,11 @@ namespace Kagarr.Core.Download
                     }
 
                     var items = client.GetItems();
+                    var clientHost = GetHostFromSettings(definition.Settings);
                     foreach (var item in items)
                     {
                         item.DownloadProtocol = definition.Protocol;
+                        item.DownloadClientHost = clientHost;
                     }
 
                     allItems.AddRange(items);
@@ -159,6 +162,24 @@ namespace Kagarr.Core.Download
                     return SabnzbdClient.FromDefinition(definition);
                 default:
                     return null;
+            }
+        }
+
+        private static string GetHostFromSettings(string settingsJson)
+        {
+            if (string.IsNullOrWhiteSpace(settingsJson))
+            {
+                return null;
+            }
+
+            try
+            {
+                var json = JObject.Parse(settingsJson);
+                return json["host"]?.Value<string>();
+            }
+            catch
+            {
+                return null;
             }
         }
     }

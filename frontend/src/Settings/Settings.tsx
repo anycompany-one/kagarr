@@ -2,6 +2,7 @@ import { NavLink, Routes, Route, Navigate } from 'react-router-dom';
 import GeneralSettings from './GeneralSettings';
 import IndexerSettings from './IndexerSettings';
 import DownloadClientSettings from './DownloadClientSettings';
+import RemotePathMappingSettings from './RemotePathMappingSettings';
 
 function Settings() {
   return (
@@ -29,12 +30,19 @@ function Settings() {
           >
             Download Clients
           </NavLink>
+          <NavLink
+            to="/settings/remotepath"
+            className={({ isActive }) => `settings-nav-item ${isActive ? 'active' : ''}`}
+          >
+            Remote Path Mappings
+          </NavLink>
         </nav>
         <div className="settings-content">
           <Routes>
             <Route path="general" element={<GeneralSettings />} />
             <Route path="indexers" element={<IndexerSettings />} />
             <Route path="downloadclients" element={<DownloadClientSettings />} />
+            <Route path="remotepath" element={<RemotePathMappingSettings />} />
             <Route path="*" element={<Navigate to="general" replace />} />
           </Routes>
         </div>

@@ -13,6 +13,7 @@ using Kagarr.Core.MediaFiles;
 using Kagarr.Core.MetadataSource;
 using Kagarr.Core.MetadataSource.Igdb;
 using Kagarr.Core.Notifications;
+using Kagarr.Core.RemotePathMappings;
 using Kagarr.Core.Wishlist;
 using Kagarr.Host.Authentication;
 using Kagarr.Host.Middleware;
@@ -86,6 +87,10 @@ namespace Kagarr.Host
             // Register wishlist services
             builder.Services.AddSingleton<IWishlistRepository, WishlistRepository>();
             builder.Services.AddSingleton<IWishlistService, WishlistService>();
+
+            // Register remote path mapping services
+            builder.Services.AddSingleton<IRemotePathMappingRepository, RemotePathMappingRepository>();
+            builder.Services.AddSingleton<IRemotePathMappingService, RemotePathMappingService>();
 
             // Register HTTP services
             builder.Services.AddSingleton<IRateLimitService, RateLimitService>();

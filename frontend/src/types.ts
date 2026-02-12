@@ -119,3 +119,10 @@ export interface HistoryResource {
   date: string;
   data: string;
 }
+
+export interface RemotePathMappingResource {
+  id: number;
+  host: string;
+  remotePath: string;
+  localPath: string;
+}

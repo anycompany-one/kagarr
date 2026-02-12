@@ -12,6 +12,7 @@ namespace Kagarr.Core.Download
         public string Message { get; set; }
         public string DownloadClientName { get; set; }
         public string DownloadProtocol { get; set; }
+        public string DownloadClientHost { get; set; }
     }
 
     public enum DownloadItemStatus

@@ -6,6 +6,7 @@ using Kagarr.Common.Instrumentation;
 using Kagarr.Core.Download;
 using Kagarr.Core.History;
 using Kagarr.Core.MediaFiles;
+using Kagarr.Core.RemotePathMappings;
 using Microsoft.Extensions.Hosting;
 using NLog;
 
@@ -17,6 +18,7 @@ namespace Kagarr.Core.Jobs
         private readonly IDownloadTrackingRepository _trackingRepository;
         private readonly IImportGameFile _importService;
         private readonly IHistoryService _historyService;
+        private readonly IRemotePathMappingService _remotePathMappingService;
         private readonly Logger _logger;
         private readonly TimeSpan _interval;
 
@@ -24,12 +26,14 @@ namespace Kagarr.Core.Jobs
             IDownloadClientService downloadClientService,
             IDownloadTrackingRepository trackingRepository,
             IImportGameFile importService,
-            IHistoryService historyService)
+            IHistoryService historyService,
+            IRemotePathMappingService remotePathMappingService)
         {
             _downloadClientService = downloadClientService;
             _trackingRepository = trackingRepository;
             _importService = importService;
             _historyService = historyService;
+            _remotePathMappingService = remotePathMappingService;
             _logger = KagarrLogger.GetLogger(this);
 
             var secondsEnv = global::System.Environment.GetEnvironmentVariable("KAGARR_IMPORT_CHECK_SECONDS");
@@ -106,15 +110,22 @@ namespace Kagarr.Core.Jobs
                 return;
             }
 
+            // Remap output path if remote path mappings are configured
+            var outputPath = _remotePathMappingService.RemapRemoteToLocal(item.DownloadClientHost, item.OutputPath);
+            if (!string.Equals(outputPath, item.OutputPath, StringComparison.Ordinal))
+            {
+                _logger.Info("Remapped output path from '{0}' to '{1}'", item.OutputPath, outputPath);
+            }
+
             // Auto mode: torrent clients need hardlink-or-copy to keep seeding, usenet uses move
-            var transferMode = string.Equals(item.DownloadProtocol, "torrent", global::System.StringComparison.OrdinalIgnoreCase)
+            var transferMode = string.Equals(item.DownloadProtocol, "torrent", StringComparison.OrdinalIgnoreCase)
                 ? TransferMode.HardLinkOrCopy
                 : TransferMode.Move;
 
             // Try folder import first (most downloads extract to folders), fall back to single file
-            var results = global::System.IO.Directory.Exists(item.OutputPath)
-                ? _importService.ImportFolder(item.OutputPath, tracking.GameId, transferMode)
-                : new global::System.Collections.Generic.List<ImportResult> { _importService.Import(item.OutputPath, tracking.GameId, transferMode) };
+            var results = global::System.IO.Directory.Exists(outputPath)
+                ? _importService.ImportFolder(outputPath, tracking.GameId, transferMode)
+                : new global::System.Collections.Generic.List<ImportResult> { _importService.Import(outputPath, tracking.GameId, transferMode) };
 
             var anySuccess = results.Any(r => r.Success);
 
