@@ -10,7 +10,7 @@ namespace Kagarr.Core.Download
         DownloadClientDefinition Add(DownloadClientDefinition client);
         DownloadClientDefinition Update(DownloadClientDefinition client);
         void Delete(int id);
-        string SendToDownloadClient(ReleaseInfo release);
+        string SendToDownloadClient(ReleaseInfo release, int gameId = 0, string gameTitle = null);
         List<DownloadClientItem> GetQueue();
     }
 }

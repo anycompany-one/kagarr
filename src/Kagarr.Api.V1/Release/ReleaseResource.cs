@@ -19,6 +19,10 @@ namespace Kagarr.Api.V1.Release
         public int Leechers { get; set; }
         public List<string> Categories { get; set; }
 
+        // Populated by the frontend when grabbing from a game detail page
+        public int? GameId { get; set; }
+        public string GameTitle { get; set; }
+
         public static ReleaseResource FromModel(ReleaseInfo model)
         {
             if (model == null)

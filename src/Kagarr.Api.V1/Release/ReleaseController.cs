@@ -35,7 +35,10 @@ namespace Kagarr.Api.V1.Release
         public ActionResult Grab([FromBody] ReleaseResource resource)
         {
             var release = resource.ToModel();
-            var downloadId = _downloadClientService.SendToDownloadClient(release);
+            var downloadId = _downloadClientService.SendToDownloadClient(
+                release,
+                resource.GameId ?? 0,
+                resource.GameTitle ?? release.Title);
 
             return Ok(new { downloadId });
         }

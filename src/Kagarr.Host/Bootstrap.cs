@@ -4,6 +4,7 @@ using Kagarr.Core.Deals;
 using Kagarr.Core.Deals.Sources;
 using Kagarr.Core.Download;
 using Kagarr.Core.Games;
+using Kagarr.Core.History;
 using Kagarr.Core.Indexers;
 using Kagarr.Core.Jobs;
 using Kagarr.Core.MediaCovers;
@@ -13,6 +14,7 @@ using Kagarr.Core.MetadataSource.Igdb;
 using Kagarr.Core.Notifications;
 using Kagarr.Core.Wishlist;
 using Kagarr.Host.Authentication;
+using Kagarr.Host.Middleware;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -63,10 +65,15 @@ namespace Kagarr.Host
 
             // Register download client services
             builder.Services.AddSingleton<IDownloadClientRepository, DownloadClientRepository>();
+            builder.Services.AddSingleton<IDownloadTrackingRepository, DownloadTrackingRepository>();
             builder.Services.AddSingleton<IDownloadClientService, DownloadClientService>();
 
             // Register import services
             builder.Services.AddSingleton<IImportGameFile, GameFileImportService>();
+
+            // Register history services
+            builder.Services.AddSingleton<IHistoryRepository, HistoryRepository>();
+            builder.Services.AddSingleton<IHistoryService, HistoryService>();
 
             // Register notification services
             builder.Services.AddSingleton<INotificationService, DiscordWebhookService>();
@@ -83,6 +90,7 @@ namespace Kagarr.Host
 
             // Background jobs
             builder.Services.AddHostedService<DealCheckJob>();
+            builder.Services.AddHostedService<CompletedDownloadJob>();
 
             // Register metadata source services
             builder.Services.AddSingleton<IIgdbAuthService, IgdbAuthService>();
@@ -114,6 +122,7 @@ namespace Kagarr.Host
             }
 
             // Configure middleware
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
             app.UseRouting();
             app.UseMiddleware<ApiKeyMiddleware>();
 

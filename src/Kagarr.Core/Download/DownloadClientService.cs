@@ -4,6 +4,7 @@ using System.Linq;
 using Kagarr.Common.Instrumentation;
 using Kagarr.Core.Download.Clients.QBittorrent;
 using Kagarr.Core.Download.Clients.Sabnzbd;
+using Kagarr.Core.History;
 using Kagarr.Core.Indexers;
 using NLog;
 
@@ -12,11 +13,18 @@ namespace Kagarr.Core.Download
     public class DownloadClientService : IDownloadClientService
     {
         private readonly IDownloadClientRepository _downloadClientRepository;
+        private readonly IDownloadTrackingRepository _trackingRepository;
+        private readonly IHistoryService _historyService;
         private readonly Logger _logger;
 
-        public DownloadClientService(IDownloadClientRepository downloadClientRepository)
+        public DownloadClientService(
+            IDownloadClientRepository downloadClientRepository,
+            IDownloadTrackingRepository trackingRepository,
+            IHistoryService historyService)
         {
             _downloadClientRepository = downloadClientRepository;
+            _trackingRepository = trackingRepository;
+            _historyService = historyService;
             _logger = KagarrLogger.GetLogger(this);
         }
 
@@ -45,7 +53,7 @@ namespace Kagarr.Core.Download
             _downloadClientRepository.Delete(id);
         }
 
-        public string SendToDownloadClient(ReleaseInfo release)
+        public string SendToDownloadClient(ReleaseInfo release, int gameId = 0, string gameTitle = null)
         {
             var definitions = _downloadClientRepository.All()
                 .Where(d => d.Enable && d.Protocol == release.DownloadProtocol)
@@ -68,7 +76,29 @@ namespace Kagarr.Core.Download
                         continue;
                     }
 
-                    return client.Download(release);
+                    var downloadId = client.Download(release);
+
+                    // Track the download so CompletedDownloadJob can auto-import it
+                    if (gameId > 0 && !string.IsNullOrWhiteSpace(downloadId))
+                    {
+                        _trackingRepository.Insert(new DownloadTracking
+                        {
+                            DownloadId = downloadId,
+                            GameId = gameId,
+                            GameTitle = gameTitle ?? release.Title,
+                            SourceTitle = release.Title,
+                            AddedDate = DateTime.UtcNow
+                        });
+
+                        _historyService.RecordEvent(
+                            HistoryEventType.Grabbed,
+                            gameId,
+                            gameTitle ?? release.Title,
+                            release.Title,
+                            $"Sent to download client via {release.Indexer}");
+                    }
+
+                    return downloadId;
                 }
                 catch (Exception ex)
                 {
