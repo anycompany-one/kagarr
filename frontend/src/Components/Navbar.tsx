@@ -35,6 +35,12 @@ function Navbar() {
           Activity
         </NavLink>
         <NavLink
+          to="/history"
+          className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
+        >
+          History
+        </NavLink>
+        <NavLink
           to="/settings"
           className={({ isActive }) => `navbar-link ${isActive ? 'active' : ''}`}
         >

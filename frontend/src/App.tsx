@@ -5,6 +5,7 @@ import AddGame from './Game/AddGame';
 import GameDetail from './Game/GameDetail';
 import Wishlist from './Wishlist/Wishlist';
 import Activity from './Activity/Activity';
+import History from './History/History';
 import Settings from './Settings/Settings';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/game/:id" element={<GameDetail />} />
           <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/activity" element={<Activity />} />
+          <Route path="/history" element={<History />} />
           <Route path="/settings/*" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

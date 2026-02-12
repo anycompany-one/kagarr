@@ -6,6 +6,7 @@ import {
   QueueResource,
   ManualImportRequest,
   ImportResultResource,
+  HistoryResource,
 } from './types';
 
 const API_BASE = '/api/v1';
@@ -131,10 +132,14 @@ export function searchReleases(term: string): Promise<ReleaseResource[]> {
   return request<ReleaseResource[]>(`/release?term=${encodeURIComponent(term)}`);
 }
 
-export function grabRelease(release: ReleaseResource): Promise<{ downloadId: string }> {
+export function grabRelease(
+  release: ReleaseResource,
+  gameId?: number,
+  gameTitle?: string,
+): Promise<{ downloadId: string }> {
   return request<{ downloadId: string }>('/release', {
     method: 'POST',
-    body: JSON.stringify(release),
+    body: JSON.stringify({ ...release, gameId, gameTitle }),
   });
 }
 
@@ -193,6 +198,12 @@ export function testNewDownloadClient(config: {
     method: 'POST',
     body: JSON.stringify(config),
   });
+}
+
+// History
+export function getHistory(gameId?: number): Promise<HistoryResource[]> {
+  const query = gameId ? `?gameId=${gameId}` : '';
+  return request<HistoryResource[]>(`/history${query}`);
 }
 
 // System

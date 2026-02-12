@@ -109,3 +109,13 @@ export interface ImportResultResource {
   destinationPath: string;
   errors: string[];
 }
+
+export interface HistoryResource {
+  id: number;
+  eventType: string;
+  gameId: number;
+  gameTitle: string;
+  sourceTitle: string;
+  date: string;
+  data: string;
+}

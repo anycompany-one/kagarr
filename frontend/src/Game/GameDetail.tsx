@@ -85,7 +85,7 @@ function GameDetail() {
   const handleGrab = useCallback(async (release: ReleaseResource) => {
     setGrabbing((prev) => new Set(prev).add(release.guid));
     try {
-      await grabRelease(release);
+      await grabRelease(release, game?.id, game?.title);
       setGrabbedGuids((prev) => new Set(prev).add(release.guid));
     } catch {
       setError('Grab failed — check your download client settings');
@@ -96,7 +96,7 @@ function GameDetail() {
         return next;
       });
     }
-  }, []);
+  }, [game]);
 
   const handleDelete = useCallback(async () => {
     if (!game) return;
