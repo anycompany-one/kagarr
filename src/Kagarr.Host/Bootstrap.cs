@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using NLog.Extensions.Logging;
 
 namespace Kagarr.Host
@@ -112,6 +113,59 @@ namespace Kagarr.Host
             // Add SignalR
             builder.Services.AddSignalR();
 
+            // Swagger / OpenAPI
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "1.0.0",
+                    Title = "Kagarr",
+                    Description = "Kagarr API — the missing *arr for games",
+                    License = new OpenApiLicense
+                    {
+                        Name = "GPL-3.0",
+                        Url = new global::System.Uri("https://github.com/anycompany-one/kagarr/blob/main/LICENSE")
+                    }
+                });
+
+                var apiKeyHeader = new OpenApiSecurityScheme
+                {
+                    Name = "X-Api-Key",
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "apiKey",
+                    Description = "API key passed as header",
+                    In = ParameterLocation.Header,
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "X-Api-Key"
+                    }
+                };
+
+                c.AddSecurityDefinition("X-Api-Key", apiKeyHeader);
+
+                var apiKeyQuery = new OpenApiSecurityScheme
+                {
+                    Name = "apikey",
+                    Type = SecuritySchemeType.ApiKey,
+                    Scheme = "apiKey",
+                    Description = "API key passed as query parameter",
+                    In = ParameterLocation.Query,
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "apikey"
+                    }
+                };
+
+                c.AddSecurityDefinition("apikey", apiKeyQuery);
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    { apiKeyHeader, global::System.Array.Empty<string>() }
+                });
+            });
+
             var app = builder.Build();
 
             // Back up database before running migrations (safety net for alpha upgrades)
@@ -132,6 +186,18 @@ namespace Kagarr.Host
             app.UseMiddleware<ExceptionHandlingMiddleware>();
             app.UseRouting();
             app.UseMiddleware<ApiKeyMiddleware>();
+
+            // Swagger UI (no auth required)
+            app.UseSwagger(c =>
+            {
+                c.RouteTemplate = "api/docs/{documentName}/openapi.json";
+            });
+
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/api/docs/v1/openapi.json", "Kagarr v1");
+                c.RoutePrefix = "api/docs";
+            });
 
             // Serve static files from UI folder if it exists
             var uiPath = global::System.IO.Path.Combine(global::System.AppContext.BaseDirectory, "UI");
