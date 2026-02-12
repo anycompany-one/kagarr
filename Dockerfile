@@ -35,7 +35,7 @@ RUN dotnet publish src/Kagarr.Console/Kagarr.Console.csproj -c Release -o /app -
 COPY --from=frontend /src/Kagarr.Host/UI /app/UI
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 
 ENV PUID=1000 \
