@@ -38,9 +38,7 @@ COPY --from=frontend /src/Kagarr.Host/UI /app/UI
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
-ENV PUID=1000 \
-    PGID=1000 \
-    KAGARR_DATA=/config
+ENV KAGARR_DATA=/config
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 

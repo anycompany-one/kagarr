@@ -441,3 +441,7 @@ brand/
 *.db-shm
 *.db.bak
 api_key
+
+# AI development workflow (local only)
+CLAUDE.md
+WORKFLOW.md

@@ -99,12 +99,6 @@ function AddGame() {
         ))}
       </div>
 
-      {results.map((game) =>
-        addedIds.has(game.igdbId) ? (
-          <span key={`added-${game.igdbId}`} />
-        ) : null,
-      )}
-
       {term.length >= 2 && !searching && results.length === 0 && (
         <div className="empty-state">
           <p>No results found for "{term}"</p>

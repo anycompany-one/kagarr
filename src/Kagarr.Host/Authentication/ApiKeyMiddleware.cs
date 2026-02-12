@@ -43,6 +43,20 @@ namespace Kagarr.Host.Authentication
                 return;
             }
 
+            // Allow system status endpoint without auth (used by Docker HEALTHCHECK)
+            if (path.Equals("/api/v1/system/status", global::System.StringComparison.OrdinalIgnoreCase))
+            {
+                await _next(context);
+                return;
+            }
+
+            // Allow Swagger docs without auth
+            if (path.StartsWith("/api/docs", global::System.StringComparison.OrdinalIgnoreCase))
+            {
+                await _next(context);
+                return;
+            }
+
             // Check header first, then query string
             var providedKey = context.Request.Headers[ApiKeyHeader].ToString();
 
