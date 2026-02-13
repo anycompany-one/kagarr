@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   testIgdb,
   testDiscord,
@@ -7,6 +8,7 @@ import {
   setApiKey,
   TestResult,
 } from '../api';
+import { supportedLanguages } from '../i18n';
 import './GeneralSettings.css';
 
 interface ServiceStatus {
@@ -21,6 +23,7 @@ interface ConfiguredService {
 }
 
 function GeneralSettings() {
+  const { t, i18n } = useTranslation();
   const [apiKeyValue, setApiKeyValue] = useState(
     () => localStorage.getItem('kagarr_api_key') || '',
   );
@@ -68,6 +71,10 @@ function GeneralSettings() {
     }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handleLanguageChange = (code: string) => {
+    i18n.changeLanguage(code);
   };
 
   const runTest = async (
@@ -119,10 +126,30 @@ function GeneralSettings() {
 
   return (
     <div className="general-settings">
+      {/* Language Section */}
+      <div>
+        <div className="gs-section-label">
+          <h2>{t('settings.language')}</h2>
+        </div>
+        <div className="gs-apikey-panel">
+          <select
+            className="gs-apikey-input"
+            value={i18n.language}
+            onChange={e => handleLanguageChange(e.target.value)}
+          >
+            {supportedLanguages.map(lang => (
+              <option key={lang.code} value={lang.code}>
+                {lang.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* API Key Section */}
       <div>
         <div className="gs-section-label">
-          <h2>Authentication</h2>
+          <h2>{t('settings.authentication')}</h2>
         </div>
         <div className="gs-apikey-panel">
           <div className="gs-apikey-row">
@@ -131,22 +158,22 @@ function GeneralSettings() {
               className="gs-apikey-input"
               value={apiKeyValue}
               onChange={e => setApiKeyValue(e.target.value)}
-              placeholder="Paste your API key here"
+              placeholder={t('settings.apiKeyPlaceholder')}
               spellCheck={false}
               autoComplete="off"
             />
             <button className="btn btn-primary btn-sm" onClick={handleSaveKey}>
-              Save
+              {t('settings.save')}
             </button>
             {saved && (
               <span className="gs-apikey-saved">
-                Saved
+                {t('settings.saved')}
               </span>
             )}
           </div>
           <p className="gs-apikey-hint">
-            Enter the API key shown in your Kagarr server logs on first startup.
-            You can also set it via the <code>KAGARR_API_KEY</code> environment variable.
+            {t('settings.apiKeyHint')}{' '}
+            {t('settings.apiKeyEnvHint')}
           </p>
         </div>
       </div>
@@ -154,14 +181,14 @@ function GeneralSettings() {
       {/* Health Checks Section */}
       <div>
         <div className="gs-section-label">
-          <h2>Connection Health</h2>
+          <h2>{t('settings.connectionHealth')}</h2>
           {!loadingServices && (
             <button
               className="gs-test-all-btn"
               onClick={handleTestAll}
               disabled={anyTesting}
             >
-              Test All
+              {t('settings.testAll')}
             </button>
           )}
         </div>
@@ -184,7 +211,7 @@ function GeneralSettings() {
           {/* Indexers */}
           {indexers.length > 0 && (
             <div className="gs-subgroup">
-              <div className="gs-subgroup-label">Indexers</div>
+              <div className="gs-subgroup-label">{t('settings.indexers')}</div>
               <div className="gs-health-grid">
                 {indexers.map(idx => (
                   <ServiceCard
@@ -200,14 +227,14 @@ function GeneralSettings() {
           )}
           {!loadingServices && indexers.length === 0 && (
             <div className="gs-empty-note">
-              No indexers configured. Add indexers in the Indexers tab to test them here.
+              {t('settings.noIndexers')}
             </div>
           )}
 
           {/* Download Clients */}
           {clients.length > 0 && (
             <div className="gs-subgroup">
-              <div className="gs-subgroup-label">Download Clients</div>
+              <div className="gs-subgroup-label">{t('settings.downloadClients')}</div>
               <div className="gs-health-grid">
                 {clients.map(cl => (
                   <ServiceCard
@@ -223,7 +250,7 @@ function GeneralSettings() {
           )}
           {!loadingServices && clients.length === 0 && (
             <div className="gs-empty-note">
-              No download clients configured. Add clients in the Download Clients tab.
+              {t('settings.noClients')}
             </div>
           )}
         </div>
@@ -243,6 +270,7 @@ function ServiceCard({
   status: ServiceStatus;
   onTest: () => void;
 }) {
+  const { t } = useTranslation();
   const stateClass = status.state !== 'idle' ? `gs-service--${status.state}` : '';
 
   return (
@@ -264,7 +292,7 @@ function ServiceCard({
         onClick={onTest}
         disabled={status.state === 'testing'}
       >
-        {status.state === 'testing' ? 'Testing...' : 'Test'}
+        {status.state === 'testing' ? t('settings.testing') : t('settings.test')}
       </button>
     </div>
   );
