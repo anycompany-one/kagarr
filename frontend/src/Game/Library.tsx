@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GameResource } from '../types';
 import { getGames, deleteGame } from '../api';
 import GameCard from './GameCard';
 
 function Library() {
+  const { t } = useTranslation();
   const [games, setGames] = useState<GameResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,11 +18,11 @@ function Library() {
       setGames(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load games');
+      setError(err instanceof Error ? err.message : t('library.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchGames();
@@ -31,7 +33,7 @@ function Library() {
       await deleteGame(id);
       setGames((prev) => prev.filter((g) => g.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete game');
+      setError(err instanceof Error ? err.message : t('library.failedToDelete'));
     }
   };
 
@@ -46,7 +48,7 @@ function Library() {
     return (
       <div className="page-loading">
         <div className="spinner" />
-        <p>Loading library...</p>
+        <p>{t('library.loadingLibrary')}</p>
       </div>
     );
   }
@@ -54,9 +56,9 @@ function Library() {
   return (
     <div className="library">
       <div className="library-header">
-        <h1>Library</h1>
+        <h1>{t('library.title')}</h1>
         <div className="library-stats">
-          {games.length} {games.length === 1 ? 'game' : 'games'}
+          {games.length} {games.length === 1 ? t('library.game') : t('library.games')}
         </div>
       </div>
 
@@ -65,7 +67,7 @@ function Library() {
           <input
             type="text"
             className="search-input"
-            placeholder="Filter library..."
+            placeholder={t('library.searchPlaceholder')}
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           />
@@ -79,15 +81,15 @@ function Library() {
           {games.length === 0 ? (
             <>
               <div className="empty-icon">&#127918;</div>
-              <h2>Your library is empty</h2>
-              <p>Add some games to get started.</p>
+              <h2>{t('library.empty')}</h2>
+              <p>{t('library.emptyHint')}</p>
               <a href="/add" className="btn btn-primary">
-                Add Game
+                {t('library.addGame')}
               </a>
             </>
           ) : (
             <>
-              <p>No games match your filter.</p>
+              <p>{t('library.noMatch')}</p>
             </>
           )}
         </div>

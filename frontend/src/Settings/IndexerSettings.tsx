@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -38,6 +39,7 @@ const EMPTY_FORM: IndexerForm = {
 };
 
 function IndexerSettings() {
+  const { t } = useTranslation();
   const [indexers, setIndexers] = useState<IndexerResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -50,11 +52,11 @@ function IndexerSettings() {
       const res = await fetch('/api/v1/indexer', { headers: getAuthHeaders() });
       setIndexers(await res.json());
     } catch {
-      setError('Failed to load indexers');
+      setError(t('settings.failedToLoadIndexers'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { fetchIndexers(); }, [fetchIndexers]);
 
@@ -87,7 +89,7 @@ function IndexerSettings() {
       setEditId(null);
       fetchIndexers();
     } catch {
-      setError('Failed to save indexer');
+      setError(t('settings.failedToSaveIndexer'));
     }
   };
 
@@ -111,14 +113,14 @@ function IndexerSettings() {
     fetchIndexers();
   };
 
-  if (loading) return <div className="page-loading"><div className="spinner" /><p>Loading...</p></div>;
+  if (loading) return <div className="page-loading"><div className="spinner" /><p>{t('common.loading')}</p></div>;
 
   return (
     <div>
       <div className="settings-section-header">
-        <h2>Indexers</h2>
+        <h2>{t('settings.indexers')}</h2>
         <button className="btn btn-primary btn-sm" onClick={() => { setShowForm(true); setEditId(null); setForm(EMPTY_FORM); }}>
-          + Add
+          {t('common.add')}
         </button>
       </div>
       {error && <div className="error-banner">{error}</div>}
@@ -126,31 +128,31 @@ function IndexerSettings() {
       {showForm && (
         <div className="settings-form">
           <div className="form-group">
-            <label>Name</label>
+            <label>{t('settings.name')}</label>
             <input className="search-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="form-group">
-            <label>Type</label>
+            <label>{t('settings.type')}</label>
             <select className="search-input" value={form.implementation} onChange={e => setForm({ ...form, implementation: e.target.value })}>
               <option value="torznab">Torznab</option>
               <option value="newznab">Newznab</option>
             </select>
           </div>
           <div className="form-group">
-            <label>URL</label>
+            <label>{t('settings.url')}</label>
             <input className="search-input" value={form.baseUrl} onChange={e => setForm({ ...form, baseUrl: e.target.value })} placeholder="http://localhost:9696" />
           </div>
           <div className="form-group">
-            <label>API Key</label>
+            <label>{t('settings.apiKey')}</label>
             <input className="search-input" value={form.apiKey} onChange={e => setForm({ ...form, apiKey: e.target.value })} />
           </div>
           <div className="form-group">
-            <label>Categories</label>
+            <label>{t('settings.categories')}</label>
             <input className="search-input" value={form.categories} onChange={e => setForm({ ...form, categories: e.target.value })} />
           </div>
           <div className="form-actions">
-            <button className="btn btn-primary btn-sm" onClick={handleSave}>Save</button>
-            <button className="btn btn-sm" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} onClick={() => { setShowForm(false); setEditId(null); }}>Cancel</button>
+            <button className="btn btn-primary btn-sm" onClick={handleSave}>{t('common.save')}</button>
+            <button className="btn btn-sm" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} onClick={() => { setShowForm(false); setEditId(null); }}>{t('common.cancel')}</button>
           </div>
         </div>
       )}
@@ -161,15 +163,15 @@ function IndexerSettings() {
             <div className="settings-item-info">
               <strong>{idx.name}</strong>
               <span className="badge">{idx.implementation}</span>
-              {idx.enableSearch && <span className="badge" style={{ background: 'var(--accent)', color: '#fff' }}>Search</span>}
+              {idx.enableSearch && <span className="badge" style={{ background: 'var(--accent)', color: '#fff' }}>{t('common.search')}</span>}
             </div>
             <div className="settings-item-actions">
-              <button className="btn btn-sm" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} onClick={() => handleEdit(idx)}>Edit</button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(idx.id)}>Delete</button>
+              <button className="btn btn-sm" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)' }} onClick={() => handleEdit(idx)}>{t('common.edit')}</button>
+              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(idx.id)}>{t('common.delete')}</button>
             </div>
           </div>
         ))}
-        {indexers.length === 0 && !showForm && <p className="subtitle">No indexers configured. Add one to start searching.</p>}
+        {indexers.length === 0 && !showForm && <p className="subtitle">{t('settings.noIndexersConfigured')}</p>}
       </div>
     </div>
   );

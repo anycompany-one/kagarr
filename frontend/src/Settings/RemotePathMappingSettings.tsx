@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   getRemotePathMappings,
   addRemotePathMapping,
@@ -7,6 +8,7 @@ import {
 import { RemotePathMappingResource } from '../types';
 
 function RemotePathMappingSettings() {
+  const { t } = useTranslation();
   const [mappings, setMappings] = useState<RemotePathMappingResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [host, setHost] = useState('');
@@ -60,24 +62,23 @@ function RemotePathMappingSettings() {
   };
 
   if (loading) {
-    return <div style={{ padding: '1.5rem', color: '#888' }}>Loading...</div>;
+    return <div style={{ padding: '1.5rem', color: '#888' }}>{t('common.loading')}</div>;
   }
 
   return (
     <div style={{ padding: '1.5rem' }}>
-      <h2 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Remote Path Mappings</h2>
+      <h2 style={{ marginTop: 0, marginBottom: '0.5rem' }}>{t('settings.remotePathMappings')}</h2>
       <p style={{ color: '#888', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-        Map download client paths to local paths when Kagarr and your download client
-        see different filesystem layouts (e.g., different Docker containers).
+        {t('settings.remotePathDescription')}
       </p>
 
       {mappings.length > 0 && (
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1.5rem' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #333' }}>
-              <th style={thStyle}>Host</th>
-              <th style={thStyle}>Remote Path</th>
-              <th style={thStyle}>Local Path</th>
+              <th style={thStyle}>{t('settings.host')}</th>
+              <th style={thStyle}>{t('settings.remotePath')}</th>
+              <th style={thStyle}>{t('settings.localPath')}</th>
               <th style={{ ...thStyle, width: 60 }}></th>
             </tr>
           </thead>
@@ -104,7 +105,7 @@ function RemotePathMappingSettings() {
                       fontSize: '0.8rem',
                     }}
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 </td>
               </tr>
@@ -124,8 +125,7 @@ function RemotePathMappingSettings() {
             marginBottom: '1.5rem',
           }}
         >
-          No remote path mappings configured. Add one below if your download client
-          reports paths that differ from what Kagarr sees on disk.
+          {t('settings.remotePathEmpty')}
         </div>
       )}
 
@@ -138,7 +138,7 @@ function RemotePathMappingSettings() {
         }}
       >
         <label style={labelStyle}>
-          <span>Host</span>
+          <span>{t('settings.host')}</span>
           <input
             type="text"
             value={host}
@@ -148,7 +148,7 @@ function RemotePathMappingSettings() {
           />
         </label>
         <label style={labelStyle}>
-          <span>Remote Path</span>
+          <span>{t('settings.remotePath')}</span>
           <input
             type="text"
             value={remotePath}
@@ -158,7 +158,7 @@ function RemotePathMappingSettings() {
           />
         </label>
         <label style={labelStyle}>
-          <span>Local Path</span>
+          <span>{t('settings.localPath')}</span>
           <input
             type="text"
             value={localPath}
@@ -182,7 +182,7 @@ function RemotePathMappingSettings() {
               saving || !host.trim() || !remotePath.trim() || !localPath.trim() ? 0.5 : 1,
           }}
         >
-          {saving ? 'Adding...' : 'Add'}
+          {saving ? t('settings.adding') : t('settings.addMapping')}
         </button>
       </div>
     </div>

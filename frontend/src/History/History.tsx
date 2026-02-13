@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getHistory } from '../api';
 import { HistoryResource } from '../types';
@@ -39,19 +40,26 @@ function eventBadgeClass(eventType: string): string {
   }
 }
 
-function eventLabel(eventType: string): string {
-  switch (eventType) {
-    case 'ImportFailed':
-      return 'Failed';
-    default:
-      return eventType;
-  }
-}
-
 function History() {
+  const { t } = useTranslation();
   const [records, setRecords] = useState<HistoryResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const eventLabel = useCallback((eventType: string): string => {
+    switch (eventType) {
+      case 'Grabbed':
+        return t('history.grabbed');
+      case 'Imported':
+        return t('history.imported');
+      case 'ImportFailed':
+        return t('history.importFailed');
+      case 'Deleted':
+        return t('history.deleted');
+      default:
+        return eventType;
+    }
+  }, [t]);
 
   const fetchHistory = useCallback(async () => {
     try {
@@ -59,11 +67,11 @@ function History() {
       setRecords(data);
       setError('');
     } catch {
-      setError('Failed to load history');
+      setError(t('history.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchHistory();
@@ -80,9 +88,9 @@ function History() {
   return (
     <div>
       <div className="hy-header">
-        <h1 className="hy-title">History</h1>
+        <h1 className="hy-title">{t('history.title')}</h1>
         <div className="hy-subtitle">
-          Event log
+          {t('history.eventLog')}
           {records.length > 0 && (
             <span className="hy-count">{records.length}</span>
           )}
@@ -94,9 +102,9 @@ function History() {
       {!error && records.length === 0 && (
         <div className="hy-empty">
           <div className="hy-empty-icon">&#128220;</div>
-          <div className="hy-empty-title">No history yet</div>
+          <div className="hy-empty-title">{t('history.emptyTitle')}</div>
           <div className="hy-empty-hint">
-            Grab some releases to get started
+            {t('history.emptyHint')}
           </div>
         </div>
       )}
@@ -106,11 +114,11 @@ function History() {
           <table className="hy-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Event</th>
-                <th>Game</th>
-                <th>Source</th>
-                <th>Details</th>
+                <th>{t('history.date')}</th>
+                <th>{t('history.event')}</th>
+                <th>{t('history.game')}</th>
+                <th>{t('history.source')}</th>
+                <th>{t('history.details')}</th>
               </tr>
             </thead>
             <tbody>

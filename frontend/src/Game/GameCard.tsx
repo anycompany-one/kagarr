@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { GameResource } from '../types';
 
 interface GameCardProps {
@@ -9,6 +10,7 @@ interface GameCardProps {
 }
 
 function GameCard({ game, onDelete, onAdd, isSearchResult }: GameCardProps) {
+  const { t } = useTranslation();
   const coverImage = game.images?.find((i) => i.coverType === 'Cover');
   const coverUrl = coverImage?.remoteUrl || coverImage?.url;
 
@@ -32,7 +34,7 @@ function GameCard({ game, onDelete, onAdd, isSearchResult }: GameCardProps) {
                 onAdd(game);
               }}
             >
-              + Add
+              {t('addGame.add')}
             </button>
           )}
           {!isSearchResult && onDelete && game.id > 0 && (
@@ -44,7 +46,7 @@ function GameCard({ game, onDelete, onAdd, isSearchResult }: GameCardProps) {
                 onDelete(game.id);
               }}
             >
-              Remove
+              {t('addGame.remove')}
             </button>
           )}
         </div>

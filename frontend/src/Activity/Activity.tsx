@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getQueue } from '../api';
 import { QueueResource } from '../types';
 import { formatSize } from '../utils';
@@ -15,6 +16,7 @@ function statusClass(status: string): string {
 }
 
 function Activity() {
+  const { t } = useTranslation();
   const [queue, setQueue] = useState<QueueResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -57,26 +59,26 @@ function Activity() {
   return (
     <div>
       <div className="aq-header">
-        <h1 className="aq-title">Activity</h1>
+        <h1 className="aq-title">{t('activity.title')}</h1>
         <div className="aq-subtitle">
           <span className="aq-live-dot" />
-          Download queue
+          {t('activity.downloadQueue')}
           {queue.length > 0 && <span className="aq-count">{queue.length}</span>}
         </div>
       </div>
 
       {error && (
         <div className="aq-error">
-          Failed to load queue &mdash; retrying&hellip;
+          {t('activity.failedToLoad')}
         </div>
       )}
 
       {!error && queue.length === 0 && (
         <div className="aq-empty">
           <div className="aq-empty-icon">&#9660;</div>
-          <div className="aq-empty-title">No active downloads</div>
+          <div className="aq-empty-title">{t('activity.emptyTitle')}</div>
           <div className="aq-empty-hint">
-            Grab some releases from a game&apos;s detail page to see them here
+            {t('activity.emptyHint')}
           </div>
         </div>
       )}
@@ -86,11 +88,11 @@ function Activity() {
           <table className="aq-table">
             <thead>
               <tr>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Progress</th>
-                <th>Size</th>
-                <th>Client</th>
+                <th>{t('activity.titleColumn')}</th>
+                <th>{t('activity.status')}</th>
+                <th>{t('activity.progress')}</th>
+                <th>{t('activity.size')}</th>
+                <th>{t('activity.client')}</th>
               </tr>
             </thead>
             <tbody>

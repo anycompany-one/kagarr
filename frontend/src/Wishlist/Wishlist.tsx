@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GameResource, WishlistResource, GameDealResource } from '../types';
 import {
   searchGames,
@@ -82,6 +83,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 }
 
 function Wishlist() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<WishlistResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,11 +116,11 @@ function Wishlist() {
       setAddedIgdbIds(new Set(data.map((d) => d.igdbId)));
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load wishlist');
+      setError(err instanceof Error ? err.message : t('wishlist.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchWishlist();
@@ -181,7 +183,7 @@ function Wishlist() {
       setSearchTerm('');
       await fetchWishlist();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add to wishlist');
+      setError(err instanceof Error ? err.message : t('wishlist.failedToAdd'));
     }
   };
 
@@ -191,7 +193,7 @@ function Wishlist() {
       setItems((prev) => prev.filter((i) => i.id !== id));
       if (expandedId === id) setExpandedId(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove');
+      setError(err instanceof Error ? err.message : t('wishlist.failedToRemove'));
     }
   };
 
@@ -215,7 +217,7 @@ function Wishlist() {
         setExpandedDeals(result.deals);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Deal check failed');
+      setError(err instanceof Error ? err.message : t('wishlist.dealCheckFailed'));
     } finally {
       setCheckingId(null);
     }
@@ -242,7 +244,7 @@ function Wishlist() {
         }),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to check deals');
+      setError(err instanceof Error ? err.message : t('wishlist.failedToCheckDeals'));
     } finally {
       setCheckingAll(false);
     }
@@ -256,7 +258,7 @@ function Wishlist() {
       });
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, notifyOnAnyDeal: updated.notifyOnAnyDeal } : i)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update');
+      setError(err instanceof Error ? err.message : t('wishlist.failedToUpdate'));
     }
   };
 
@@ -276,7 +278,7 @@ function Wishlist() {
         prev.map((i) => (i.id === item.id ? { ...i, priceThreshold: parsed } : i)),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update threshold');
+      setError(err instanceof Error ? err.message : t('wishlist.failedToUpdateThreshold'));
     }
 
     setEditingThreshold((prev) => {
@@ -308,7 +310,7 @@ function Wishlist() {
     return (
       <div className="page-loading">
         <div className="spinner" />
-        <p>Loading wishlist...</p>
+        <p>{t('wishlist.loadingWishlist')}</p>
       </div>
     );
   }
@@ -317,9 +319,9 @@ function Wishlist() {
     <div className="wl">
       <div className="wl-header">
         <div className="wl-header-left">
-          <h1>Wishlist</h1>
+          <h1>{t('wishlist.title')}</h1>
           <span className="wl-count">
-            {items.length} {items.length === 1 ? 'game' : 'games'}
+            {items.length} {items.length === 1 ? t('wishlist.game') : t('wishlist.games')}
           </span>
         </div>
         <div className="wl-header-actions">
@@ -330,7 +332,7 @@ function Wishlist() {
               disabled={checkingAll}
             >
               <RefreshIcon />
-              {checkingAll ? 'Checking...' : 'Check All Deals'}
+              {checkingAll ? t('wishlist.checkingDeals') : t('wishlist.checkAll')}
             </button>
           )}
         </div>
@@ -341,7 +343,7 @@ function Wishlist() {
           <span className="wl-search-icon"><SearchIcon /></span>
           <input
             type="text"
-            placeholder="Search IGDB to add a game to your wishlist..."
+            placeholder={t('wishlist.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => handleSearchInput(e.target.value)}
           />
@@ -371,7 +373,7 @@ function Wishlist() {
                         {game.developer && ` \u00B7 ${game.developer}`}
                       </div>
                     </div>
-                    {alreadyAdded && <span className="wl-search-result-added">On wishlist</span>}
+                    {alreadyAdded && <span className="wl-search-result-added">{t('wishlist.onWishlist')}</span>}
                   </div>
                 );
               })}
@@ -385,21 +387,21 @@ function Wishlist() {
       {items.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon" style={{ fontSize: '3.5rem' }}>&#128176;</div>
-          <h2>Your wishlist is empty</h2>
-          <p>Search for games above to start tracking deals.</p>
+          <h2>{t('wishlist.empty')}</h2>
+          <p>{t('wishlist.emptyHint')}</p>
           <p className="subtitle">
-            Connect your ITAD API key in Settings for cross-store price tracking.
+            {t('wishlist.emptySubHint')}
           </p>
         </div>
       ) : (
         <table className="wl-table">
           <thead>
             <tr>
-              <th style={{ width: '40%' }}>Game</th>
-              <th>Price</th>
-              <th>Threshold</th>
-              <th style={{ textAlign: 'center' }}>Notify</th>
-              <th>Checked</th>
+              <th style={{ width: '40%' }}>{t('history.game')}</th>
+              <th>{t('wishlist.price')}</th>
+              <th>{t('wishlist.threshold')}</th>
+              <th style={{ textAlign: 'center' }}>{t('wishlist.notify')}</th>
+              <th>{t('wishlist.checked')}</th>
               <th style={{ textAlign: 'right' }}></th>
             </tr>
           </thead>
@@ -497,14 +499,14 @@ function Wishlist() {
                           className={`wl-btn-icon check-btn ${checkingId === item.id ? 'checking' : ''}`}
                           onClick={() => handleCheckDeals(item.id)}
                           disabled={checkingId === item.id}
-                          title="Check deals"
+                          title={t('wishlist.checkDeals')}
                         >
                           <RefreshIcon />
                         </button>
                         <button
                           className="wl-btn-icon remove-btn"
                           onClick={() => handleRemove(item.id)}
-                          title="Remove from wishlist"
+                          title={t('wishlist.removeFromWishlist')}
                         >
                           <TrashIcon />
                         </button>
@@ -516,10 +518,10 @@ function Wishlist() {
                       <td colSpan={6}>
                         <div className="wl-deal-panel">
                           {loadingDeals ? (
-                            <div className="wl-deal-none">Loading deals...</div>
+                            <div className="wl-deal-none">{t('wishlist.loadingDeals')}</div>
                           ) : expandedDeals.length === 0 ? (
                             <div className="wl-deal-none">
-                              No deal data yet. Click the refresh icon to check prices.
+                              {t('wishlist.noDealData')}
                             </div>
                           ) : (
                             <div className="wl-deal-grid">

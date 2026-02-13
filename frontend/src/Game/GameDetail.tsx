@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   getGame,
   deleteGame,
@@ -29,6 +30,7 @@ function seederClass(s: number): string {
 }
 
 function GameDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -56,9 +58,9 @@ function GameDetail() {
     setLoading(true);
     getGame(Number(id))
       .then(setGame)
-      .catch(() => setError('Failed to load game'))
+      .catch(() => setError(t('gameDetail.failedToLoad')))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   const handleSearch = useCallback(async () => {
     if (!game) return;
@@ -69,12 +71,12 @@ function GameDetail() {
       const results = await searchReleases(game.title);
       setReleases(results);
     } catch {
-      setError('Release search failed');
+      setError(t('gameDetail.releaseSearchFailed'));
     } finally {
       setSearchLoading(false);
       setSearchDone(true);
     }
-  }, [game]);
+  }, [game, t]);
 
   const handleGrab = useCallback(async (release: ReleaseResource) => {
     setGrabbing((prev) => new Set(prev).add(release.guid));
@@ -82,7 +84,7 @@ function GameDetail() {
       await grabRelease(release, game?.id, game?.title);
       setGrabbedGuids((prev) => new Set(prev).add(release.guid));
     } catch {
-      setError('Grab failed — check your download client settings');
+      setError(t('gameDetail.grabFailed'));
     } finally {
       setGrabbing((prev) => {
         const next = new Set(prev);
@@ -90,18 +92,18 @@ function GameDetail() {
         return next;
       });
     }
-  }, [game]);
+  }, [game, t]);
 
   const handleDelete = useCallback(async () => {
     if (!game) return;
-    if (!window.confirm(`Remove "${game.title}" from your library?`)) return;
+    if (!window.confirm(t('gameDetail.deleteConfirm', { title: game.title }))) return;
     try {
       await deleteGame(game.id);
       navigate('/');
     } catch {
-      setError('Failed to delete game');
+      setError(t('gameDetail.failedToDelete'));
     }
-  }, [game, navigate]);
+  }, [game, navigate, t]);
 
   const handleScan = useCallback(async () => {
     setScanning(true);
@@ -113,11 +115,11 @@ function GameDetail() {
       setFoundFiles(files);
       setSelectedFiles(new Set(files));
     } catch {
-      setError('Scan failed — check the path');
+      setError(t('gameDetail.scanFailed'));
     } finally {
       setScanning(false);
     }
-  }, [importPath]);
+  }, [importPath, t]);
 
   const handleImport = useCallback(async () => {
     if (!game || selectedFiles.size === 0) return;
@@ -131,11 +133,11 @@ function GameDetail() {
       });
       setImportResults(results);
     } catch {
-      setError('Import failed');
+      setError(t('gameDetail.importFailed'));
     } finally {
       setImporting(false);
     }
-  }, [game, importPath, selectedFiles]);
+  }, [game, importPath, selectedFiles, t]);
 
   const toggleFile = (file: string) => {
     setSelectedFiles((prev) => {
@@ -157,9 +159,9 @@ function GameDetail() {
   if (!game) {
     return (
       <div className="gd-empty">
-        <p>Game not found</p>
+        <p>{t('gameDetail.gameNotFound')}</p>
         <Link to="/" className="gd-back">
-          <span className="gd-back-arrow">&larr;</span> Back to Library
+          <span className="gd-back-arrow">&larr;</span> {t('gameDetail.backToLibrary')}
         </Link>
       </div>
     );
@@ -172,7 +174,7 @@ function GameDetail() {
     <div>
       {/* Back link */}
       <Link to="/" className="gd-back">
-        <span className="gd-back-arrow">&larr;</span> Library
+        <span className="gd-back-arrow">&larr;</span> {t('gameDetail.backToLibrary')}
       </Link>
 
       {/* Error banner */}
@@ -214,7 +216,7 @@ function GameDetail() {
           <div className="gd-meta">
             {game.platform && game.platform !== 'Unknown' && (
               <>
-                <span className="gd-meta-label">Platform</span>
+                <span className="gd-meta-label">{t('gameDetail.platform')}</span>
                 <span className="gd-meta-value">
                   {game.platform.replace('_', ' ')}
                 </span>
@@ -223,14 +225,14 @@ function GameDetail() {
             )}
             {game.developer && (
               <>
-                <span className="gd-meta-label">Developer</span>
+                <span className="gd-meta-label">{t('gameDetail.developer')}</span>
                 <span className="gd-meta-value">{game.developer}</span>
                 <span className="gd-meta-divider" />
               </>
             )}
             {game.publisher && (
               <>
-                <span className="gd-meta-label">Publisher</span>
+                <span className="gd-meta-label">{t('gameDetail.publisher')}</span>
                 <span className="gd-meta-value">{game.publisher}</span>
               </>
             )}
@@ -257,14 +259,14 @@ function GameDetail() {
               {searchLoading ? (
                 <>
                   <span className="spinner" style={{ width: 14, height: 14, margin: 0 }} />
-                  Searching&hellip;
+                  {t('gameDetail.searching')}
                 </>
               ) : (
-                <>&#128269; Search Releases</>
+                <>&#128269; {t('gameDetail.searchReleases')}</>
               )}
             </button>
             <button className="gd-btn-delete" onClick={handleDelete}>
-              Delete Game
+              {t('gameDetail.deleteGame')}
             </button>
           </div>
         </div>
@@ -275,7 +277,7 @@ function GameDetail() {
         <div className="gd-releases">
           <div className="gd-section-header">
             <h2>
-              Releases
+              {t('gameDetail.releases')}
               {releases.length > 0 && (
                 <span className="gd-release-count">
                   {' '}
@@ -288,12 +290,12 @@ function GameDetail() {
           {searchLoading && (
             <div className="gd-release-loading">
               <div className="spinner" />
-              Searching indexers&hellip;
+              {t('gameDetail.searchingIndexers')}
             </div>
           )}
 
           {searchDone && !searchLoading && releases.length === 0 && (
-            <div className="gd-empty">No releases found</div>
+            <div className="gd-empty">{t('gameDetail.noReleases')}</div>
           )}
 
           {releases.length > 0 && (
@@ -301,12 +303,12 @@ function GameDetail() {
               <table className="gd-table">
                 <thead>
                   <tr>
-                    <th>Title</th>
-                    <th>Indexer</th>
-                    <th>Size</th>
-                    <th>Seeders</th>
-                    <th>Protocol</th>
-                    <th>Age</th>
+                    <th>{t('gameDetail.title')}</th>
+                    <th>{t('gameDetail.indexer')}</th>
+                    <th>{t('gameDetail.size')}</th>
+                    <th>{t('gameDetail.seeders')}</th>
+                    <th>{t('gameDetail.protocol')}</th>
+                    <th>{t('gameDetail.age')}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -350,10 +352,10 @@ function GameDetail() {
                           }
                         >
                           {grabbedGuids.has(r.guid)
-                            ? '\u2713 Grabbed'
+                            ? t('gameDetail.grabbed')
                             : grabbing.has(r.guid)
-                            ? 'Sending\u2026'
-                            : 'Grab'}
+                            ? t('gameDetail.sending')
+                            : t('gameDetail.grab')}
                         </button>
                       </td>
                     </tr>
@@ -368,7 +370,7 @@ function GameDetail() {
       {/* Manual import */}
       <div className="gd-import">
         <div className="gd-section-header">
-          <h2>Manual Import</h2>
+          <h2>{t('gameDetail.manualImport')}</h2>
         </div>
 
         <div className="gd-import-row">
@@ -384,7 +386,7 @@ function GameDetail() {
             onClick={handleScan}
             disabled={scanning || !importPath}
           >
-            {scanning ? 'Scanning\u2026' : 'Scan'}
+            {scanning ? t('gameDetail.scanning') : t('gameDetail.scan')}
           </button>
         </div>
 
@@ -415,8 +417,8 @@ function GameDetail() {
                 disabled={importing || selectedFiles.size === 0}
               >
                 {importing
-                  ? 'Importing\u2026'
-                  : `Import Selected (${selectedFiles.size})`}
+                  ? t('gameDetail.importing')
+                  : t('gameDetail.importSelected', { count: selectedFiles.size })}
               </button>
             </div>
           </>
