@@ -234,8 +234,3 @@ export function updateRemotePathMapping(
 export function deleteRemotePathMapping(id: number): Promise<void> {
   return request<void>(`/remotepathmapping/${id}`, { method: 'DELETE' });
 }
-
-// System
-export function getApiKeyFromServer(): Promise<{ apiKey: string }> {
-  return request<{ apiKey: string }>('/system/apikey');
-}
