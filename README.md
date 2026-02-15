@@ -148,6 +148,14 @@ Kagarr automatically backs up `kagarr.db` to `kagarr.db.bak` before running data
 - Notification agents beyond Discord (Telegram, email, Gotify)
 - Prowlarr native sync (two-way indexer management)
 
+## Acceptable Use
+
+Kagarr is designed for managing game libraries and downloads that you have
+the legal right to access. Users are solely responsible for ensuring their
+use of Kagarr complies with all applicable laws and the terms of service of
+any third-party platforms they connect to. The authors do not condone or
+support piracy.
+
 ## License
 
 Kagarr is licensed under the [GNU General Public License v3.0](LICENSE), the same license used by Sonarr, Radarr, and Prowlarr.
