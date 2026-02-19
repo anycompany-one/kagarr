@@ -1,5 +1,9 @@
 # Kagarr
 
+[![CI](https://github.com/anycompany-one/kagarr/actions/workflows/ci.yml/badge.svg)](https://github.com/anycompany-one/kagarr/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/anycompany-one/kagarr)](https://github.com/anycompany-one/kagarr/releases/latest)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
 The missing *arr for games. Self-hosted game library manager and download automation.
 
 > **Alpha** — Kagarr is functional but still early. Expect rough edges, missing features, and breaking changes between releases.
