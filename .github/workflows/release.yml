@@ -26,7 +26,7 @@ jobs:
             artifact: kagarr-osx-arm64.tar.gz
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
