@@ -151,12 +151,7 @@ namespace Kagarr.Host
                     Type = SecuritySchemeType.ApiKey,
                     Scheme = "apiKey",
                     Description = "API key passed as header",
-                    In = ParameterLocation.Header,
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "X-Api-Key"
-                    }
+                    In = ParameterLocation.Header
                 };
 
                 c.AddSecurityDefinition("X-Api-Key", apiKeyHeader);
@@ -167,19 +162,14 @@ namespace Kagarr.Host
                     Type = SecuritySchemeType.ApiKey,
                     Scheme = "apiKey",
                     Description = "API key passed as query parameter",
-                    In = ParameterLocation.Query,
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "apikey"
-                    }
+                    In = ParameterLocation.Query
                 };
 
                 c.AddSecurityDefinition("apikey", apiKeyQuery);
 
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
                 {
-                    { apiKeyHeader, global::System.Array.Empty<string>() }
+                    [new OpenApiSecuritySchemeReference("X-Api-Key", document)] = new global::System.Collections.Generic.List<string>()
                 });
             });
 
