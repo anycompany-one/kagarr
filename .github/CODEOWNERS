@@ -1,2 +1,6 @@
-# Default owner for everything
-* @ronald50928
+# Every file in this repo requires review from @ronald50928 before merging.
+# This CODEOWNERS was added by phase3 repo-hardening and is tracked in therock
+# at stacks/paperclip/agent-rbac/repo-hardening/CODEOWNERS
+#
+# For anycompany-one/kagarr, also add @ronald50928 because Ronald owns the org.
+*  @ronald50928
