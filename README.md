@@ -39,7 +39,7 @@ services:
     image: ghcr.io/anycompany-one/kagarr:latest
     container_name: kagarr
     ports:
-      - "6767:6767"
+      - "8585:8585"
     environment:
       - KAGARR_IGDB_CLIENT_ID=your_twitch_client_id
       - KAGARR_IGDB_CLIENT_SECRET=your_twitch_client_secret
@@ -67,7 +67,7 @@ Kagarr requires a Twitch/IGDB API client to fetch game metadata:
 
 ## Configuration
 
-After starting Kagarr, open `http://localhost:6767` and go to **Settings**.
+After starting Kagarr, open `http://localhost:8585` and go to **Settings**.
 
 ### Indexers
 

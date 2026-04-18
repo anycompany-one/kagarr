@@ -13,11 +13,11 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://localhost:6767',
+        target: 'http://localhost:8585',
         changeOrigin: true,
       },
       '/signalr': {
-        target: 'http://localhost:6767',
+        target: 'http://localhost:8585',
         ws: true,
       },
     },

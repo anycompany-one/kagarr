@@ -52,7 +52,7 @@ npm run build
 dotnet run --project src/Kagarr.Console/Kagarr.Console.csproj -- --data=./dev-config
 ```
 
-Open http://localhost:6767 in your browser.
+Open http://localhost:8585 in your browser.
 
 ### Running Tests
 
