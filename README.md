@@ -39,7 +39,7 @@ services:
     image: ghcr.io/anycompany-one/kagarr:latest
     container_name: kagarr
     ports:
-      - "6767:6767"
+      - "8585:8585"
     environment:
       - KAGARR_IGDB_CLIENT_ID=your_twitch_client_id
       - KAGARR_IGDB_CLIENT_SECRET=your_twitch_client_secret
@@ -56,6 +56,19 @@ services:
     restart: unless-stopped
 ```
 
+### File ownership (Unraid / non-root hosts)
+
+The container currently runs as **root** and does not honor `PUID`/`PGID`
+environment variables. On Unraid and similar setups where the host expects
+files under `nobody:users` (99:100), you have two options:
+
+- Run the container with `--user 99:100` (or `user: "99:100"` in compose).
+- Let it run as root, then `chown -R 99:100 /mnt/user/appdata/kagarr` after
+  the first start.
+
+Either approach is fine; `--user` is cleaner because no post-hoc chown is
+needed. A future release may add a PUID/PGID-aware entrypoint.
+
 ### IGDB credentials
 
 Kagarr requires a Twitch/IGDB API client to fetch game metadata:
@@ -67,7 +80,7 @@ Kagarr requires a Twitch/IGDB API client to fetch game metadata:
 
 ## Configuration
 
-After starting Kagarr, open `http://localhost:6767` and go to **Settings**.
+After starting Kagarr, open `http://localhost:8585` and go to **Settings**.
 
 ### Indexers
 

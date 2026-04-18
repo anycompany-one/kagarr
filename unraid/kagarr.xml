@@ -9,13 +9,13 @@
   <Project>https://github.com/anycompany-one/kagarr</Project>
   <Overview>Kagarr is the missing *arr for games. A self-hosted game library manager and download automation tool that integrates with IGDB for metadata, Prowlarr/Newznab/Torznab indexers for search, and qBittorrent/SABnzbd for downloading.</Overview>
   <Category>MediaApp:Other</Category>
-  <WebUI>http://[IP]:[PORT:6767]</WebUI>
+  <WebUI>http://[IP]:[PORT:8585]</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/anycompany-one/kagarr/main/unraid/kagarr.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/anycompany-one/kagarr/main/frontend/public/favicon.svg</Icon>
   <ExtraParams/>
   <DateInstalled/>
   <Description>Kagarr - The missing *arr for games. Automated game library management with IGDB metadata, indexer search, and download client integration.</Description>
-  <Config Name="WebUI Port" Target="6767" Default="6767" Mode="tcp" Description="Web interface port" Type="Port" Display="always" Required="true" Mask="false">6767</Config>
+  <Config Name="WebUI Port" Target="8585" Default="8585" Mode="tcp" Description="Web interface port" Type="Port" Display="always" Required="true" Mask="false">8585</Config>
   <Config Name="Config" Target="/config" Default="/mnt/user/appdata/kagarr" Mode="rw" Description="Application configuration and database" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/kagarr</Config>
   <Config Name="Games" Target="/games" Default="/mnt/user/data/games" Mode="rw" Description="Game library root folder" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/data/games</Config>
   <Config Name="Downloads" Target="/downloads" Default="/mnt/user/data/downloads" Mode="rw" Description="Download client output folder" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/data/downloads</Config>

@@ -264,7 +264,7 @@ namespace Kagarr.Host
                 return parsedPort;
             }
 
-            return 6767;
+            return 8585;
         }
 
         private static string GetBindAddress(string[] args)

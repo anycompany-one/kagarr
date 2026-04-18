@@ -42,10 +42,10 @@ ENV KAGARR_DATA=/config
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-EXPOSE 6767
+EXPOSE 8585
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:${KAGARR_PORT:-6767}/api/v1/system/status || exit 1
+    CMD curl -f http://localhost:${KAGARR_PORT:-8585}/api/v1/system/status || exit 1
 
 VOLUME ["/config", "/games", "/downloads"]
 
