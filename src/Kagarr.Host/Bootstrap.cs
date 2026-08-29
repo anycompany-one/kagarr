@@ -75,6 +75,7 @@ namespace Kagarr.Host
             builder.Services.AddSingleton<IDownloadClientService, DownloadClientService>();
 
             // Register import services
+            builder.Services.AddSingleton<IGameFileRepository, GameFileRepository>();
             builder.Services.AddSingleton<IDiskTransferService, DiskTransferService>();
             builder.Services.AddSingleton<IImportGameFile, GameFileImportService>();
 

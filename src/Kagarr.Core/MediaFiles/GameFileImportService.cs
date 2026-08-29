@@ -12,16 +12,23 @@ namespace Kagarr.Core.MediaFiles
     {
         private readonly IGameService _gameService;
         private readonly IDiskTransferService _diskTransferService;
+        private readonly IGameFileRepository _gameFileRepository;
         private readonly Logger _logger;
 
-        public GameFileImportService(IGameService gameService, IDiskTransferService diskTransferService)
+        public GameFileImportService(IGameService gameService, IDiskTransferService diskTransferService, IGameFileRepository gameFileRepository)
         {
             _gameService = gameService;
             _diskTransferService = diskTransferService;
+            _gameFileRepository = gameFileRepository;
             _logger = KagarrLogger.GetLogger(this);
         }
 
         public ImportResult Import(string sourcePath, int gameId, TransferMode transferMode = TransferMode.Move)
+        {
+            return Import(sourcePath, gameId, transferMode, false);
+        }
+
+        private ImportResult Import(string sourcePath, int gameId, TransferMode transferMode, bool preserveOriginalName)
         {
             var result = new ImportResult
             {
@@ -65,7 +72,7 @@ namespace Kagarr.Core.MediaFiles
 
                 global::System.IO.Directory.CreateDirectory(gameFolderPath);
 
-                var fileName = FileNameBuilder.BuildGameFileName(game, sourcePath);
+                var fileName = FileNameBuilder.BuildGameFileName(game, sourcePath, preserveOriginalName);
                 var destinationPath = global::System.IO.Path.Combine(gameFolderPath, fileName);
 
                 _logger.Info("Importing '{0}' to '{1}' (mode: {2})", sourcePath, destinationPath, transferMode);
@@ -83,8 +90,11 @@ namespace Kagarr.Core.MediaFiles
                     Platform = game.Platform
                 };
 
-                // Update game path
+                gameFile = _gameFileRepository.Insert(gameFile);
+
+                // Update game path and link the imported file
                 game.Path = gameFolderPath;
+                game.GameFileId = gameFile.Id;
                 _gameService.UpdateGame(game);
 
                 result.Success = true;
@@ -109,7 +119,11 @@ namespace Kagarr.Core.MediaFiles
             var gameFiles = ScanForGameFiles(folderPath);
             _logger.Info("Found {0} game files in '{1}'", gameFiles.Count, folderPath);
 
-            return gameFiles.Select(f => Import(f, gameId, transferMode)).ToList();
+            // When a folder yields multiple files, keep the original file name in the
+            // destination so the imported files cannot overwrite each other.
+            var preserveOriginalName = gameFiles.Count > 1;
+
+            return gameFiles.Select(f => Import(f, gameId, transferMode, preserveOriginalName)).ToList();
         }
 
         public List<string> ScanForGameFiles(string path)
