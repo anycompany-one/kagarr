@@ -73,14 +73,16 @@ namespace Kagarr.Core.Test.MediaFiles
         }
 
         [Test]
-        public void TransferFile_should_overwrite_existing_target()
+        public void TransferFile_should_throw_when_target_exists()
         {
             var source = CreateTestFile("source.bin", "new content");
             var target = CreateTestFile("target.bin", "old content");
 
-            _service.TransferFile(source, target, TransferMode.Copy);
+            var act = () => _service.TransferFile(source, target, TransferMode.Copy);
 
-            File.ReadAllText(target).Should().Be("new content");
+            act.Should().Throw<IOException>().WithMessage("*already exists*");
+            File.ReadAllText(target).Should().Be("old content", "existing target must not be deleted or overwritten");
+            File.Exists(source).Should().BeTrue("source should be untouched when transfer is refused");
         }
 
         [Test]
