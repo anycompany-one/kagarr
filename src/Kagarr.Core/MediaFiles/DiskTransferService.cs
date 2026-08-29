@@ -43,10 +43,10 @@ namespace Kagarr.Core.MediaFiles
                 global::System.IO.Directory.CreateDirectory(targetDir);
             }
 
-            // Remove existing target file if it exists
+            // Never silently replace an existing target file
             if (global::System.IO.File.Exists(targetPath))
             {
-                global::System.IO.File.Delete(targetPath);
+                throw new global::System.IO.IOException($"Target file already exists: '{targetPath}'");
             }
 
             if (mode.HasFlag(TransferMode.HardLink))
@@ -112,7 +112,7 @@ namespace Kagarr.Core.MediaFiles
         private void CopyFile(string sourcePath, string targetPath)
         {
             _logger.Debug("Copying '{0}' to '{1}'", sourcePath, targetPath);
-            global::System.IO.File.Copy(sourcePath, targetPath, true);
+            global::System.IO.File.Copy(sourcePath, targetPath, false);
         }
 
         private void MoveFile(string sourcePath, string targetPath)

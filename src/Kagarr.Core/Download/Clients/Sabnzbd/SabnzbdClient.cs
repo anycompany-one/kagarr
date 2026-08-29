@@ -147,7 +147,7 @@ namespace Kagarr.Core.Download.Clients.Sabnzbd
             }
         }
 
-        private static DownloadItemStatus MapHistoryStatus(string status)
+        public static DownloadItemStatus MapHistoryStatus(string status)
         {
             switch (status?.ToLowerInvariant())
             {
@@ -156,7 +156,9 @@ namespace Kagarr.Core.Download.Clients.Sabnzbd
                 case "failed":
                     return DownloadItemStatus.Failed;
                 default:
-                    return DownloadItemStatus.Completed;
+                    // Post-processing states (Verifying, Repairing, Extracting, etc.)
+                    // are still in progress - never treat them as completed.
+                    return DownloadItemStatus.Downloading;
             }
         }
 

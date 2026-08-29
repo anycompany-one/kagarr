@@ -20,16 +20,29 @@ namespace Kagarr.Core.Organizer
 
         public static string BuildGameFileName(Game game, string originalFileName)
         {
+            return BuildGameFileName(game, originalFileName, false);
+        }
+
+        public static string BuildGameFileName(Game game, string originalFileName, bool includeOriginalName)
+        {
             var extension = global::System.IO.Path.GetExtension(originalFileName);
             var title = CleanFileName(game.Title);
             var platform = game.Platform.ToString().Replace("_", " ");
 
-            if (game.Year > 0)
+            var baseName = game.Year > 0
+                ? $"{title} ({game.Year}) [{platform}]"
+                : $"{title} [{platform}]";
+
+            if (includeOriginalName)
             {
-                return $"{title} ({game.Year}) [{platform}]{extension}";
+                var originalName = CleanFileName(global::System.IO.Path.GetFileNameWithoutExtension(originalFileName));
+                if (!string.IsNullOrEmpty(originalName))
+                {
+                    baseName = $"{baseName} - {originalName}";
+                }
             }
 
-            return $"{title} [{platform}]{extension}";
+            return $"{baseName}{extension}";
         }
 
         public static string CleanFileName(string name)
