@@ -10,7 +10,7 @@
     "lint": "eslint src --ext .ts,.tsx"
   },
   "dependencies": {
-    "@microsoft/signalr": "^8.0.7",
+    "@microsoft/signalr": "^10.0.11",
     "i18next": "^26.4.0",
     "i18next-browser-languagedetector": "^8.2.1",
     "react": "^19.2.0",
