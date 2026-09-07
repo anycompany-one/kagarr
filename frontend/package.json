@@ -11,17 +11,17 @@
   },
   "dependencies": {
     "@microsoft/signalr": "^8.0.7",
-    "i18next": "^26.4.0",
+    "i18next": "^26.4.2",
     "i18next-browser-languagedetector": "^8.2.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.8",
-    "react-i18next": "^17.0.12",
-    "react-router-dom": "^7.18.2"
+    "react-i18next": "^17.0.13",
+    "react-router-dom": "^7.18.3"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",
-    "@types/react-dom": "^19.2.5",
-    "@vitejs/plugin-react": "^6.1.0",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.2"
   }
