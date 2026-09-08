@@ -5,6 +5,26 @@ All notable changes to Kagarr will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.2-alpha] - 2026-09-08
+
+### Fixed
+- Database backups now use the SQLite online backup API; previous backups could miss WAL contents or be torn (#103)
+- Media covers are served via `/api/v1/mediacover` and stored under the data path; they previously pointed at a dead route and were lost on container recreation (#107)
+- Failed auto-imports back off between retries and give up after 5 attempts instead of retrying every minute forever (#105)
+- A duplicate grab of the same release no longer permanently blocks that download's import (#108)
+- IGDB token refresh validates the auth response and no longer loops on short-lived tokens (#110)
+
+### Security
+- Swagger docs (`/api/docs`) now require the API key (#104)
+- Indexer and download-client APIs redact stored passwords/API keys; the UI round-trips redacted values without wiping credentials (#104)
+- API key is header-only; `?apikey=` query authentication removed (#104)
+- Anonymous `/api/v1/system/status` trimmed to app name and version (#104)
+- Game titles are sanitized against path traversal and reserved characters on all platforms (#109)
+
+### Changed
+- All outbound HTTP uses pooled `IHttpClientFactory` clients and async I/O end-to-end; indexer searches fan out in parallel (#106)
+- Frontend: React 19, TypeScript 7; settings pages consolidated on the shared API helper
+
 ## [0.1.1-alpha] - 2026-08-29
 
 ### Fixed
@@ -55,5 +75,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Exception middleware prevents stack trace leakage
 - Responsible disclosure policy (SECURITY.md)
 
+[0.1.2-alpha]: https://github.com/anycompany-one/kagarr/releases/tag/v0.1.2-alpha
 [0.1.1-alpha]: https://github.com/anycompany-one/kagarr/releases/tag/v0.1.1-alpha
 [0.1.0-alpha]: https://github.com/anycompany-one/kagarr/releases/tag/v0.1.0-alpha
