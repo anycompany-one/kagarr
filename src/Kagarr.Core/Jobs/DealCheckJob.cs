@@ -41,7 +41,7 @@ namespace Kagarr.Core.Jobs
                 try
                 {
                     _logger.Info("Running scheduled deal check");
-                    _dealService.CheckAllDeals();
+                    await _dealService.CheckAllDealsAsync();
                     _logger.Info("Scheduled deal check complete");
                 }
                 catch (Exception ex)

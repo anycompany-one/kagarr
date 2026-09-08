@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Kagarr.Core.Download;
 using Kagarr.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +18,10 @@ namespace Kagarr.Api.V1.Queue
         }
 
         [HttpGet]
-        public ActionResult<List<QueueResource>> GetQueue()
+        public async Task<ActionResult<List<QueueResource>>> GetQueue()
         {
-            return _downloadClientService.GetQueue().Select(QueueResource.FromModel).ToList();
+            var queue = await _downloadClientService.GetQueueAsync();
+            return queue.Select(QueueResource.FromModel).ToList();
         }
     }
 }

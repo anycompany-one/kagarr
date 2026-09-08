@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Kagarr.Common.Instrumentation;
 using Kagarr.Core.Notifications;
 using Kagarr.Core.Wishlist;
@@ -29,13 +30,13 @@ namespace Kagarr.Core.Deals
             _logger = KagarrLogger.GetLogger(this);
         }
 
-        public DealSnapshot CheckDeals(int wishlistItemId)
+        public Task<DealSnapshot> CheckDealsAsync(int wishlistItemId)
         {
             var item = _wishlistRepository.Get(wishlistItemId);
-            return CheckDealsForItem(item);
+            return CheckDealsForItemAsync(item);
         }
 
-        public List<DealSnapshot> CheckAllDeals()
+        public async Task<List<DealSnapshot>> CheckAllDealsAsync()
         {
             var items = _wishlistRepository.All().ToList();
             _logger.Info("Checking deals for {0} wishlisted games", items.Count);
@@ -43,7 +44,7 @@ namespace Kagarr.Core.Deals
             var results = new List<DealSnapshot>();
             foreach (var item in items)
             {
-                var snapshot = CheckDealsForItem(item);
+                var snapshot = await CheckDealsForItemAsync(item);
                 if (snapshot != null)
                 {
                     results.Add(snapshot);
@@ -63,7 +64,7 @@ namespace Kagarr.Core.Deals
             return _snapshotRepository.All().ToList();
         }
 
-        private DealSnapshot CheckDealsForItem(WishlistItem item)
+        private async Task<DealSnapshot> CheckDealsForItemAsync(WishlistItem item)
         {
             _logger.Debug("Checking deals for '{0}'", item.Title);
 
@@ -73,7 +74,7 @@ namespace Kagarr.Core.Deals
             {
                 try
                 {
-                    var deals = source.GetDeals(item.Title, item.SteamAppId);
+                    var deals = await source.GetDealsAsync(item.Title, item.SteamAppId);
                     allDeals.AddRange(deals);
                 }
                 catch (Exception ex)
@@ -112,7 +113,7 @@ namespace Kagarr.Core.Deals
             // Fire notification if price dropped below threshold
             if (lowestDeal != null && ShouldNotify(item, lowestDeal, previousLowest))
             {
-                _notificationService.OnDealFound(item, lowestDeal);
+                await _notificationService.OnDealFoundAsync(item, lowestDeal);
             }
 
             return snapshot;

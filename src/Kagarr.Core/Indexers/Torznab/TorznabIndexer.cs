@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Kagarr.Common.Instrumentation;
 using Newtonsoft.Json;
@@ -14,18 +15,20 @@ namespace Kagarr.Core.Indexers.Torznab
         private readonly Logger _logger;
         private readonly TorznabSettings _settings;
         private readonly string _name;
+        private readonly HttpClient _httpClient;
 
-        public TorznabIndexer(string name, TorznabSettings settings)
+        public TorznabIndexer(string name, TorznabSettings settings, HttpClient httpClient)
         {
             _name = name;
             _settings = settings;
+            _httpClient = httpClient;
             _logger = KagarrLogger.GetLogger(this);
         }
 
         public string Name => _name;
         public string Protocol => "torrent";
 
-        public List<ReleaseInfo> Search(string searchTerm)
+        public async Task<List<ReleaseInfo>> SearchAsync(string searchTerm)
         {
             var baseUrl = _settings.BaseUrl.TrimEnd('/');
             var apiPath = _settings.ApiPath ?? "/api";
@@ -35,12 +38,8 @@ namespace Kagarr.Core.Indexers.Torznab
 
             try
             {
-                using (var httpClient = new HttpClient())
-                {
-                    httpClient.Timeout = global::System.TimeSpan.FromSeconds(30);
-                    var response = httpClient.GetStringAsync(url).Result;
-                    return ParseTorznabResponse(response);
-                }
+                var response = await _httpClient.GetStringAsync(url);
+                return ParseTorznabResponse(response);
             }
             catch (Exception ex)
             {
@@ -143,10 +142,10 @@ namespace Kagarr.Core.Indexers.Torznab
             return DateTime.UtcNow;
         }
 
-        public static TorznabIndexer FromDefinition(IndexerDefinition definition)
+        public static TorznabIndexer FromDefinition(IndexerDefinition definition, HttpClient httpClient)
         {
             var settings = JsonConvert.DeserializeObject<TorznabSettings>(definition.Settings) ?? new TorznabSettings();
-            return new TorznabIndexer(definition.Name, settings);
+            return new TorznabIndexer(definition.Name, settings, httpClient);
         }
     }
 }

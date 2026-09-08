@@ -57,6 +57,15 @@ namespace Kagarr.Host
             var dbPath = global::System.IO.Path.Combine(dataPath, "kagarr.db");
             var connectionString = $"Data Source={dbPath}";
 
+            // Outbound HTTP: pooled handlers via IHttpClientFactory (no per-call HttpClient)
+            builder.Services.AddHttpClient();
+            builder.Services.AddHttpClient("deals", c => c.DefaultRequestHeaders.UserAgent.ParseAdd("Kagarr/1.0"));
+
+            // qBittorrent manages its session cookie manually, so its handler must not
+            // accumulate cookies in a shared CookieContainer.
+            builder.Services.AddHttpClient(HttpClientNames.NoCookies)
+                .ConfigurePrimaryHttpMessageHandler(() => new global::System.Net.Http.HttpClientHandler { UseCookies = false });
+
             // Register database
             builder.Services.AddSingleton<IMainDatabase>(new MainDatabase(connectionString));
             builder.Services.AddSingleton<IDatabase>(sp => sp.GetRequiredService<IMainDatabase>());
@@ -114,7 +123,9 @@ namespace Kagarr.Host
             // Register metadata source services
             builder.Services.AddSingleton<IIgdbAuthService, IgdbAuthService>();
             builder.Services.AddSingleton<ISearchForNewGame, IgdbProxy>();
-            builder.Services.AddSingleton<IMapCoversToLocal, MediaCoverService>();
+            builder.Services.AddSingleton<IMapCoversToLocal>(sp => new MediaCoverService(
+                dataPath,
+                sp.GetRequiredService<global::System.Net.Http.IHttpClientFactory>()));
 
             // FluentMigrator
             builder.Services.AddFluentMigratorCore()

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Kagarr.Core.Deals;
 using Kagarr.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -37,16 +38,17 @@ namespace Kagarr.Api.V1.Deals
         }
 
         [HttpPost("{wishlistItemId:int}/check")]
-        public ActionResult<DealResource> CheckDeals(int wishlistItemId)
+        public async Task<ActionResult<DealResource>> CheckDeals(int wishlistItemId)
         {
-            var snapshot = _dealService.CheckDeals(wishlistItemId);
+            var snapshot = await _dealService.CheckDealsAsync(wishlistItemId);
             return DealResource.FromModel(snapshot);
         }
 
         [HttpPost("check")]
-        public ActionResult<List<DealResource>> CheckAllDeals()
+        public async Task<ActionResult<List<DealResource>>> CheckAllDeals()
         {
-            return _dealService.CheckAllDeals()
+            var snapshots = await _dealService.CheckAllDealsAsync();
+            return snapshots
                 .Select(DealResource.FromModel)
                 .ToList();
         }

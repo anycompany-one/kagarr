@@ -1,11 +1,12 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Kagarr.Core.Games;
 
 namespace Kagarr.Core.MetadataSource
 {
     public interface ISearchForNewGame
     {
-        List<Game> SearchForNewGame(string term);
-        Game GetGameInfo(int igdbId);
+        Task<List<Game>> SearchForNewGameAsync(string term);
+        Task<Game> GetGameInfoAsync(int igdbId);
     }
 }

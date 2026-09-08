@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using Kagarr.Core.MediaCovers;
 using Kagarr.Core.MetadataSource;
 using Kagarr.Http;
@@ -20,16 +20,29 @@ namespace Kagarr.Api.V1.Games
         }
 
         [HttpGet]
-        public ActionResult<List<GameResource>> Search([FromQuery] string term)
+        public async Task<ActionResult<List<GameResource>>> Search([FromQuery] string term)
         {
-            var igdbResults = _searchProxy.SearchForNewGame(term);
-            return MapToResource(igdbResults).ToList();
+            var igdbResults = await _searchProxy.SearchForNewGameAsync(term);
+
+            var resources = new List<GameResource>();
+            foreach (var game in igdbResults)
+            {
+                var resource = GameResource.FromModel(game);
+
+                // For lookup results, the game is not in the library yet (Id=0),
+                // so ConvertToLocalUrlsAsync will keep the remote URLs as-is
+                await _coverMapper.ConvertToLocalUrlsAsync(resource.Id, game.Images);
+
+                resources.Add(resource);
+            }
+
+            return resources;
         }
 
         [HttpGet("{igdbId:int}")]
-        public ActionResult<GameResource> GetByIgdbId(int igdbId)
+        public async Task<ActionResult<GameResource>> GetByIgdbId(int igdbId)
         {
-            var game = _searchProxy.GetGameInfo(igdbId);
+            var game = await _searchProxy.GetGameInfoAsync(igdbId);
 
             if (game == null)
             {
@@ -37,23 +50,9 @@ namespace Kagarr.Api.V1.Games
             }
 
             var resource = GameResource.FromModel(game);
-            _coverMapper.ConvertToLocalUrls(resource.Id, game.Images);
+            await _coverMapper.ConvertToLocalUrlsAsync(resource.Id, game.Images);
 
             return resource;
-        }
-
-        private IEnumerable<GameResource> MapToResource(IEnumerable<Kagarr.Core.Games.Game> games)
-        {
-            foreach (var game in games)
-            {
-                var resource = GameResource.FromModel(game);
-
-                // For lookup results, the game is not in the library yet (Id=0),
-                // so ConvertToLocalUrls will keep the remote URLs as-is
-                _coverMapper.ConvertToLocalUrls(resource.Id, game.Images);
-
-                yield return resource;
-            }
         }
     }
 }

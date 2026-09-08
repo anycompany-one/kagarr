@@ -60,7 +60,7 @@ namespace Kagarr.Core.Jobs
             {
                 try
                 {
-                    ProcessCompletedDownloads();
+                    await ProcessCompletedDownloadsAsync();
                 }
                 catch (Exception ex)
                 {
@@ -71,9 +71,9 @@ namespace Kagarr.Core.Jobs
             }
         }
 
-        internal void ProcessCompletedDownloads()
+        internal async Task ProcessCompletedDownloadsAsync()
         {
-            var queue = _downloadClientService.GetQueue();
+            var queue = await _downloadClientService.GetQueueAsync();
             var completedItems = queue.Where(i => i.Status == DownloadItemStatus.Completed).ToList();
 
             if (completedItems.Count == 0)

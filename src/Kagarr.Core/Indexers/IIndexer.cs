@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Kagarr.Core.Indexers
 {
@@ -6,6 +7,6 @@ namespace Kagarr.Core.Indexers
     {
         string Name { get; }
         string Protocol { get; }
-        List<ReleaseInfo> Search(string searchTerm);
+        Task<List<ReleaseInfo>> SearchAsync(string searchTerm);
     }
 }

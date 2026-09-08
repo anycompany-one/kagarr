@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Kagarr.Core.Indexers
 {
@@ -9,6 +10,6 @@ namespace Kagarr.Core.Indexers
         IndexerDefinition Add(IndexerDefinition indexer);
         IndexerDefinition Update(IndexerDefinition indexer);
         void Delete(int id);
-        List<ReleaseInfo> SearchAllIndexers(string searchTerm);
+        Task<List<ReleaseInfo>> SearchAllIndexersAsync(string searchTerm);
     }
 }

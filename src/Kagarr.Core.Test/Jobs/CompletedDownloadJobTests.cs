@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Kagarr.Core.Download;
 using Kagarr.Core.History;
@@ -59,8 +60,8 @@ namespace Kagarr.Core.Test.Jobs
                 DownloadClientName = "qBittorrent"
             };
 
-            _downloadClientService.Setup(s => s.GetQueue())
-                .Returns(new List<DownloadClientItem> { item });
+            _downloadClientService.Setup(s => s.GetQueueAsync())
+                .ReturnsAsync(new List<DownloadClientItem> { item });
 
             return item;
         }
@@ -89,7 +90,7 @@ namespace Kagarr.Core.Test.Jobs
         }
 
         [Test]
-        public void Successful_import_should_delete_tracking_and_record_history()
+        public async Task Successful_import_should_delete_tracking_and_record_history()
         {
             GivenCompletedItem();
             var tracking = GivenTracking();
@@ -97,7 +98,7 @@ namespace Kagarr.Core.Test.Jobs
             _importService.Setup(s => s.Import(It.IsAny<string>(), 42, It.IsAny<TransferMode>()))
                 .Returns(new ImportResult { Success = true });
 
-            _job.ProcessCompletedDownloads();
+            await _job.ProcessCompletedDownloadsAsync();
 
             _trackingRepo.Verify(r => r.Delete(tracking), Times.Once);
             _historyService.Verify(
@@ -106,24 +107,24 @@ namespace Kagarr.Core.Test.Jobs
         }
 
         [Test]
-        public void Completed_item_without_tracking_should_not_import()
+        public async Task Completed_item_without_tracking_should_not_import()
         {
             GivenCompletedItem();
             _trackingRepo.Setup(r => r.FindByDownloadId(It.IsAny<string>())).Returns((DownloadTracking)null);
 
-            _job.ProcessCompletedDownloads();
+            await _job.ProcessCompletedDownloadsAsync();
 
             _importService.Verify(s => s.Import(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<TransferMode>()), Times.Never);
         }
 
         [Test]
-        public void First_failed_import_should_record_history_and_increment_attempts()
+        public async Task First_failed_import_should_record_history_and_increment_attempts()
         {
             GivenCompletedItem();
             var tracking = GivenTracking();
             GivenImportFails();
 
-            _job.ProcessCompletedDownloads();
+            await _job.ProcessCompletedDownloadsAsync();
 
             tracking.ImportAttempts.Should().Be(1);
             tracking.LastAttemptDate.Should().NotBeNull();
@@ -135,26 +136,26 @@ namespace Kagarr.Core.Test.Jobs
         }
 
         [Test]
-        public void Failed_import_within_backoff_window_should_be_skipped()
+        public async Task Failed_import_within_backoff_window_should_be_skipped()
         {
             GivenCompletedItem();
             var tracking = GivenTracking(attempts: 1, lastAttempt: DateTime.UtcNow.AddMinutes(-5));
             GivenImportFails();
 
-            _job.ProcessCompletedDownloads();
+            await _job.ProcessCompletedDownloadsAsync();
 
             _importService.Verify(s => s.Import(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<TransferMode>()), Times.Never);
             tracking.ImportAttempts.Should().Be(1);
         }
 
         [Test]
-        public void Failed_import_after_backoff_elapsed_should_retry_without_history_spam()
+        public async Task Failed_import_after_backoff_elapsed_should_retry_without_history_spam()
         {
             GivenCompletedItem();
             var tracking = GivenTracking(attempts: 2, lastAttempt: DateTime.UtcNow.AddMinutes(-31));
             GivenImportFails();
 
-            _job.ProcessCompletedDownloads();
+            await _job.ProcessCompletedDownloadsAsync();
 
             tracking.ImportAttempts.Should().Be(3);
             _trackingRepo.Verify(r => r.Update(tracking), Times.Once);
@@ -166,7 +167,7 @@ namespace Kagarr.Core.Test.Jobs
         }
 
         [Test]
-        public void Failed_import_should_give_up_after_max_attempts()
+        public async Task Failed_import_should_give_up_after_max_attempts()
         {
             GivenCompletedItem();
             var tracking = GivenTracking(
@@ -174,7 +175,7 @@ namespace Kagarr.Core.Test.Jobs
                 lastAttempt: DateTime.UtcNow.AddHours(-24));
             GivenImportFails();
 
-            _job.ProcessCompletedDownloads();
+            await _job.ProcessCompletedDownloadsAsync();
 
             tracking.ImportAttempts.Should().Be(CompletedDownloadJob.MaxImportAttempts);
             _trackingRepo.Verify(r => r.Delete(tracking), Times.Once);

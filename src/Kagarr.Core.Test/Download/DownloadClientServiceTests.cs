@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
 using FluentAssertions;
 using Kagarr.Core.Download;
 using Kagarr.Core.History;
@@ -15,6 +17,7 @@ namespace Kagarr.Core.Test.Download
         private Mock<IDownloadClientRepository> _clientRepo;
         private Mock<IDownloadTrackingRepository> _trackingRepo;
         private Mock<IHistoryService> _historyService;
+        private Mock<IHttpClientFactory> _httpClientFactory;
         private DownloadClientService _service;
 
         [SetUp]
@@ -23,24 +26,29 @@ namespace Kagarr.Core.Test.Download
             _clientRepo = new Mock<IDownloadClientRepository>();
             _trackingRepo = new Mock<IDownloadTrackingRepository>();
             _historyService = new Mock<IHistoryService>();
+            _httpClientFactory = new Mock<IHttpClientFactory>();
+            _httpClientFactory
+                .Setup(f => f.CreateClient(It.IsAny<string>()))
+                .Returns(() => new HttpClient());
             _service = new DownloadClientService(
                 _clientRepo.Object,
                 _trackingRepo.Object,
-                _historyService.Object);
+                _historyService.Object,
+                _httpClientFactory.Object);
         }
 
         [Test]
-        public void GetQueue_with_no_clients_should_return_empty_list()
+        public async Task GetQueue_with_no_clients_should_return_empty_list()
         {
             _clientRepo.Setup(r => r.All()).Returns(new List<DownloadClientDefinition>());
 
-            var result = _service.GetQueue();
+            var result = await _service.GetQueueAsync();
 
             result.Should().BeEmpty();
         }
 
         [Test]
-        public void SendToDownloadClient_with_no_matching_protocol_should_throw()
+        public async Task SendToDownloadClient_with_no_matching_protocol_should_throw()
         {
             _clientRepo.Setup(r => r.All()).Returns(new List<DownloadClientDefinition>());
 
@@ -51,14 +59,14 @@ namespace Kagarr.Core.Test.Download
                 DownloadProtocol = "Torrent"
             };
 
-            var act = () => _service.SendToDownloadClient(release, 1, "Test Game");
+            var act = () => _service.SendToDownloadClientAsync(release, 1, "Test Game");
 
-            act.Should().Throw<InvalidOperationException>()
+            await act.Should().ThrowAsync<InvalidOperationException>()
                 .WithMessage("*No download client*");
         }
 
         [Test]
-        public void SendToDownloadClient_should_record_tracking_when_gameId_provided()
+        public async Task SendToDownloadClient_should_record_tracking_when_gameId_provided()
         {
             // We can't easily mock the internal CreateClient/Download call since it creates
             // real QBittorrentClient instances. Instead, verify that if a client existed and
@@ -75,7 +83,7 @@ namespace Kagarr.Core.Test.Download
 
             try
             {
-                _service.SendToDownloadClient(release, 1, "Test Game");
+                await _service.SendToDownloadClientAsync(release, 1, "Test Game");
             }
             catch (InvalidOperationException)
             {

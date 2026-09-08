@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 using Kagarr.Common.Instrumentation;
 using Newtonsoft.Json;
 using NLog;
@@ -9,20 +11,22 @@ namespace Kagarr.Core.MetadataSource.Igdb
 {
     public interface IIgdbAuthService
     {
-        string GetAccessToken();
+        Task<string> GetAccessTokenAsync();
         string GetClientId();
     }
 
-    public class IgdbAuthService : IIgdbAuthService
+    public sealed class IgdbAuthService : IIgdbAuthService, IDisposable
     {
         private readonly Logger _logger;
-        private readonly object _lock = new object();
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly SemaphoreSlim _lock = new SemaphoreSlim(1, 1);
 
         private string _accessToken;
         private DateTime _tokenExpiry;
 
-        public IgdbAuthService()
+        public IgdbAuthService(IHttpClientFactory httpClientFactory)
         {
+            _httpClientFactory = httpClientFactory;
             _logger = KagarrLogger.GetLogger(this);
             _tokenExpiry = DateTime.MinValue;
         }
@@ -39,9 +43,11 @@ namespace Kagarr.Core.MetadataSource.Igdb
             return clientId;
         }
 
-        public string GetAccessToken()
+        public async Task<string> GetAccessTokenAsync()
         {
-            lock (_lock)
+            await _lock.WaitAsync();
+
+            try
             {
                 if (!string.IsNullOrEmpty(_accessToken) && DateTime.UtcNow < _tokenExpiry)
                 {
@@ -58,17 +64,18 @@ namespace Kagarr.Core.MetadataSource.Igdb
                     throw new InvalidOperationException("KAGARR_IGDB_CLIENT_SECRET environment variable is not set. Configure your Twitch/IGDB client credentials.");
                 }
 
-                using (var httpClient = new HttpClient())
+                var httpClient = _httpClientFactory.CreateClient("igdb");
+
+                using (var content = new FormUrlEncodedContent(new[]
                 {
-                    using (var content = new FormUrlEncodedContent(new[]
+                    new KeyValuePair<string, string>("client_id", clientId),
+                    new KeyValuePair<string, string>("client_secret", clientSecret),
+                    new KeyValuePair<string, string>("grant_type", "client_credentials")
+                }))
+                {
+                    using (var response = await httpClient.PostAsync("https://id.twitch.tv/oauth2/token", content))
                     {
-                        new KeyValuePair<string, string>("client_id", clientId),
-                        new KeyValuePair<string, string>("client_secret", clientSecret),
-                        new KeyValuePair<string, string>("grant_type", "client_credentials")
-                    }))
-                    {
-                        var response = httpClient.PostAsync("https://id.twitch.tv/oauth2/token", content).Result;
-                        var responseBody = response.Content.ReadAsStringAsync().Result;
+                        var responseBody = await response.Content.ReadAsStringAsync();
 
                         if (!response.IsSuccessStatusCode)
                         {
@@ -96,6 +103,15 @@ namespace Kagarr.Core.MetadataSource.Igdb
                     }
                 }
             }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+
+        public void Dispose()
+        {
+            _lock.Dispose();
         }
     }
 }

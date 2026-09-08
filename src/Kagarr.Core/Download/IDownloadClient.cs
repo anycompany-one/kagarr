@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Kagarr.Core.Indexers;
 
 namespace Kagarr.Core.Download
@@ -7,7 +8,7 @@ namespace Kagarr.Core.Download
     {
         string Name { get; }
         string Protocol { get; }
-        string Download(ReleaseInfo release);
-        List<DownloadClientItem> GetItems();
+        Task<string> DownloadAsync(ReleaseInfo release);
+        Task<List<DownloadClientItem>> GetItemsAsync();
     }
 }

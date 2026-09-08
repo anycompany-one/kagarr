@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
-using System.Threading;
+using System.Threading.Tasks;
 using Kagarr.Common.Instrumentation;
 using Kagarr.Core.Games;
 using Kagarr.Core.Http;
@@ -22,16 +22,18 @@ namespace Kagarr.Core.MetadataSource.Igdb
 
         private readonly IIgdbAuthService _authService;
         private readonly IRateLimitService _rateLimitService;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly Logger _logger;
 
-        public IgdbProxy(IIgdbAuthService authService, IRateLimitService rateLimitService)
+        public IgdbProxy(IIgdbAuthService authService, IRateLimitService rateLimitService, IHttpClientFactory httpClientFactory)
         {
             _authService = authService;
             _rateLimitService = rateLimitService;
+            _httpClientFactory = httpClientFactory;
             _logger = KagarrLogger.GetLogger(this);
         }
 
-        public List<Game> SearchForNewGame(string term)
+        public async Task<List<Game>> SearchForNewGameAsync(string term)
         {
             if (string.IsNullOrWhiteSpace(term))
             {
@@ -45,18 +47,18 @@ namespace Kagarr.Core.MetadataSource.Igdb
 
             var body = $"search \"{escapedTerm}\"; fields name,cover.*,summary,platforms.*,first_release_date,genres.*,involved_companies.*,involved_companies.company.*,screenshots.*; limit 20;";
 
-            var resources = ExecuteIgdbQuery<IgdbGameResource>("games", body);
+            var resources = await ExecuteIgdbQueryAsync<IgdbGameResource>("games", body);
 
             return resources.Select(MapToGame).ToList();
         }
 
-        public Game GetGameInfo(int igdbId)
+        public async Task<Game> GetGameInfoAsync(int igdbId)
         {
             _logger.Info("Getting game info from IGDB for ID {0}", igdbId);
 
             var body = $"where id = {igdbId}; fields name,cover.*,summary,platforms.*,first_release_date,genres.*,involved_companies.*,involved_companies.company.*,screenshots.*; limit 1;";
 
-            var resources = ExecuteIgdbQuery<IgdbGameResource>("games", body);
+            var resources = await ExecuteIgdbQueryAsync<IgdbGameResource>("games", body);
             var resource = resources.FirstOrDefault();
 
             if (resource == null)
@@ -68,34 +70,36 @@ namespace Kagarr.Core.MetadataSource.Igdb
             return MapToGame(resource);
         }
 
-        private List<T> ExecuteIgdbQuery<T>(string endpoint, string body)
+        private async Task<List<T>> ExecuteIgdbQueryAsync<T>(string endpoint, string body)
         {
-            var token = _authService.GetAccessToken();
+            var token = await _authService.GetAccessTokenAsync();
             var clientId = _authService.GetClientId();
 
             for (var attempt = 0; attempt <= MaxRetries; attempt++)
             {
                 _rateLimitService.WaitAndPulse("igdb", IgdbRateInterval);
 
-                using (var httpClient = new HttpClient())
+                var url = $"{IgdbApiBaseUrl}/{endpoint}";
+
+                _logger.Debug("IGDB API request: POST {0} - {1}", url, body);
+
+                var httpClient = _httpClientFactory.CreateClient("igdb");
+
+                using (var request = new HttpRequestMessage(HttpMethod.Post, url))
                 {
-                    httpClient.DefaultRequestHeaders.Add("Client-ID", clientId);
-                    httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+                    request.Headers.TryAddWithoutValidation("Client-ID", clientId);
+                    request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {token}");
+                    request.Content = new StringContent(body, Encoding.UTF8, "text/plain");
 
-                    using (var content = new StringContent(body, Encoding.UTF8, "text/plain"))
+                    using (var response = await httpClient.SendAsync(request))
                     {
-                        var url = $"{IgdbApiBaseUrl}/{endpoint}";
-
-                        _logger.Debug("IGDB API request: POST {0} - {1}", url, body);
-
-                        var response = httpClient.PostAsync(url, content).Result;
-                        var responseBody = response.Content.ReadAsStringAsync().Result;
+                        var responseBody = await response.Content.ReadAsStringAsync();
 
                         // Retry on 429 Too Many Requests
                         if ((int)response.StatusCode == 429 && attempt < MaxRetries)
                         {
                             _logger.Warn("IGDB rate limited (429), retrying in 1 second (attempt {0}/{1})", attempt + 1, MaxRetries);
-                            Thread.Sleep(1000);
+                            await Task.Delay(1000);
                             continue;
                         }
 

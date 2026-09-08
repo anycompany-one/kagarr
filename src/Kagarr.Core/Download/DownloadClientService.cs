@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Kagarr.Common.Instrumentation;
 using Kagarr.Core.Download.Clients.QBittorrent;
 using Kagarr.Core.Download.Clients.Sabnzbd;
 using Kagarr.Core.History;
+using Kagarr.Core.Http;
 using Kagarr.Core.Indexers;
 using Newtonsoft.Json.Linq;
 using NLog;
@@ -16,16 +19,19 @@ namespace Kagarr.Core.Download
         private readonly IDownloadClientRepository _downloadClientRepository;
         private readonly IDownloadTrackingRepository _trackingRepository;
         private readonly IHistoryService _historyService;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly Logger _logger;
 
         public DownloadClientService(
             IDownloadClientRepository downloadClientRepository,
             IDownloadTrackingRepository trackingRepository,
-            IHistoryService historyService)
+            IHistoryService historyService,
+            IHttpClientFactory httpClientFactory)
         {
             _downloadClientRepository = downloadClientRepository;
             _trackingRepository = trackingRepository;
             _historyService = historyService;
+            _httpClientFactory = httpClientFactory;
             _logger = KagarrLogger.GetLogger(this);
         }
 
@@ -54,7 +60,7 @@ namespace Kagarr.Core.Download
             _downloadClientRepository.Delete(id);
         }
 
-        public string SendToDownloadClient(ReleaseInfo release, int gameId = 0, string gameTitle = null)
+        public async Task<string> SendToDownloadClientAsync(ReleaseInfo release, int gameId = 0, string gameTitle = null)
         {
             var definitions = _downloadClientRepository.All()
                 .Where(d => d.Enable && d.Protocol == release.DownloadProtocol)
@@ -77,7 +83,7 @@ namespace Kagarr.Core.Download
                         continue;
                     }
 
-                    var downloadId = client.Download(release);
+                    var downloadId = await client.DownloadAsync(release);
 
                     // Track the download so CompletedDownloadJob can auto-import it
                     if (gameId > 0 && !string.IsNullOrWhiteSpace(downloadId))
@@ -124,7 +130,7 @@ namespace Kagarr.Core.Download
             throw new InvalidOperationException("All download clients failed");
         }
 
-        public List<DownloadClientItem> GetQueue()
+        public async Task<List<DownloadClientItem>> GetQueueAsync()
         {
             var allItems = new List<DownloadClientItem>();
             var definitions = _downloadClientRepository.All()
@@ -141,7 +147,7 @@ namespace Kagarr.Core.Download
                         continue;
                     }
 
-                    var items = client.GetItems();
+                    var items = await client.GetItemsAsync();
                     var clientHost = GetHostFromSettings(definition.Settings);
                     foreach (var item in items)
                     {
@@ -160,17 +166,24 @@ namespace Kagarr.Core.Download
             return allItems;
         }
 
-        private static IDownloadClient CreateClient(DownloadClientDefinition definition)
+        protected internal virtual IDownloadClient CreateClient(DownloadClientDefinition definition)
         {
             switch (definition.Implementation?.ToLowerInvariant())
             {
                 case "qbittorrent":
-                    return QBittorrentClient.FromDefinition(definition);
+                    return QBittorrentClient.FromDefinition(definition, _httpClientFactory.CreateClient(HttpClientNames.NoCookies));
                 case "sabnzbd":
-                    return SabnzbdClient.FromDefinition(definition);
+                    return SabnzbdClient.FromDefinition(definition, CreateDefaultClient());
                 default:
                     return null;
             }
+        }
+
+        private HttpClient CreateDefaultClient()
+        {
+            var httpClient = _httpClientFactory.CreateClient("downloadclient");
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
+            return httpClient;
         }
 
         private static string GetHostFromSettings(string settingsJson)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Kagarr.Common.Instrumentation;
 using Newtonsoft.Json;
@@ -14,18 +15,20 @@ namespace Kagarr.Core.Indexers.Newznab
         private readonly Logger _logger;
         private readonly NewznabSettings _settings;
         private readonly string _name;
+        private readonly HttpClient _httpClient;
 
-        public NewznabIndexer(string name, NewznabSettings settings)
+        public NewznabIndexer(string name, NewznabSettings settings, HttpClient httpClient)
         {
             _name = name;
             _settings = settings;
+            _httpClient = httpClient;
             _logger = KagarrLogger.GetLogger(this);
         }
 
         public string Name => _name;
         public string Protocol => "usenet";
 
-        public List<ReleaseInfo> Search(string searchTerm)
+        public async Task<List<ReleaseInfo>> SearchAsync(string searchTerm)
         {
             var baseUrl = _settings.BaseUrl.TrimEnd('/');
             var apiPath = _settings.ApiPath ?? "/api";
@@ -35,12 +38,8 @@ namespace Kagarr.Core.Indexers.Newznab
 
             try
             {
-                using (var httpClient = new HttpClient())
-                {
-                    httpClient.Timeout = global::System.TimeSpan.FromSeconds(30);
-                    var response = httpClient.GetStringAsync(url).Result;
-                    return ParseNewznabResponse(response);
-                }
+                var response = await _httpClient.GetStringAsync(url);
+                return ParseNewznabResponse(response);
             }
             catch (Exception ex)
             {
@@ -111,10 +110,10 @@ namespace Kagarr.Core.Indexers.Newznab
             return DateTime.UtcNow;
         }
 
-        public static NewznabIndexer FromDefinition(IndexerDefinition definition)
+        public static NewznabIndexer FromDefinition(IndexerDefinition definition, HttpClient httpClient)
         {
             var settings = JsonConvert.DeserializeObject<NewznabSettings>(definition.Settings) ?? new NewznabSettings();
-            return new NewznabIndexer(definition.Name, settings);
+            return new NewznabIndexer(definition.Name, settings, httpClient);
         }
     }
 }

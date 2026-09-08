@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Kagarr.Core.Download;
+using Kagarr.Core.Http;
 using Kagarr.Core.Indexers;
 using Kagarr.Core.Indexers.Newznab;
 using Kagarr.Core.Indexers.Torznab;
@@ -16,22 +18,27 @@ namespace Kagarr.Api.V1.Health
     {
         private readonly IIndexerService _indexerService;
         private readonly IDownloadClientService _downloadClientService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public HealthController(IIndexerService indexerService, IDownloadClientService downloadClientService)
+        public HealthController(
+            IIndexerService indexerService,
+            IDownloadClientService downloadClientService,
+            IHttpClientFactory httpClientFactory)
         {
             _indexerService = indexerService;
             _downloadClientService = downloadClientService;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpPost("indexer/{id:int}")]
-        public ActionResult<TestResult> TestIndexer(int id)
+        public Task<TestResult> TestIndexer(int id)
         {
             var definition = _indexerService.Get(id);
-            return TestIndexerDefinition(definition);
+            return TestIndexerDefinitionAsync(definition);
         }
 
         [HttpPost("indexer/test")]
-        public ActionResult<TestResult> TestNewIndexer([FromBody] IndexerTestRequest request)
+        public Task<TestResult> TestNewIndexer([FromBody] IndexerTestRequest request)
         {
             var definition = new IndexerDefinition
             {
@@ -42,18 +49,18 @@ namespace Kagarr.Api.V1.Health
                 EnableRss = true
             };
 
-            return TestIndexerDefinition(definition);
+            return TestIndexerDefinitionAsync(definition);
         }
 
         [HttpPost("downloadclient/{id:int}")]
-        public ActionResult<TestResult> TestDownloadClient(int id)
+        public Task<TestResult> TestDownloadClient(int id)
         {
             var definition = _downloadClientService.Get(id);
-            return TestDownloadClientDefinition(definition);
+            return TestDownloadClientDefinitionAsync(definition);
         }
 
         [HttpPost("downloadclient/test")]
-        public ActionResult<TestResult> TestNewDownloadClient([FromBody] DownloadClientTestRequest request)
+        public Task<TestResult> TestNewDownloadClient([FromBody] DownloadClientTestRequest request)
         {
             var definition = new DownloadClientDefinition
             {
@@ -64,11 +71,11 @@ namespace Kagarr.Api.V1.Health
                 Enable = true
             };
 
-            return TestDownloadClientDefinition(definition);
+            return TestDownloadClientDefinitionAsync(definition);
         }
 
         [HttpPost("igdb")]
-        public ActionResult<TestResult> TestIgdb()
+        public async Task<ActionResult<TestResult>> TestIgdb()
         {
             try
             {
@@ -80,17 +87,17 @@ namespace Kagarr.Api.V1.Health
                     return new TestResult { IsValid = false, Message = "IGDB client ID or secret not configured." };
                 }
 
-                using (var httpClient = new HttpClient())
-                {
-                    using (var content = new FormUrlEncodedContent(new[]
-                    {
-                        new KeyValuePair<string, string>("client_id", clientId),
-                        new KeyValuePair<string, string>("client_secret", clientSecret),
-                        new KeyValuePair<string, string>("grant_type", "client_credentials")
-                    }))
-                    {
-                        var response = httpClient.PostAsync("https://id.twitch.tv/oauth2/token", content).Result;
+                var httpClient = _httpClientFactory.CreateClient("igdb");
 
+                using (var content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("client_id", clientId),
+                    new KeyValuePair<string, string>("client_secret", clientSecret),
+                    new KeyValuePair<string, string>("grant_type", "client_credentials")
+                }))
+                {
+                    using (var response = await httpClient.PostAsync("https://id.twitch.tv/oauth2/token", content))
+                    {
                         if (response.IsSuccessStatusCode)
                         {
                             return new TestResult { IsValid = true, Message = "IGDB connection successful." };
@@ -111,7 +118,7 @@ namespace Kagarr.Api.V1.Health
         }
 
         [HttpPost("discord")]
-        public ActionResult<TestResult> TestDiscord()
+        public async Task<ActionResult<TestResult>> TestDiscord()
         {
             var webhookUrl = global::System.Environment.GetEnvironmentVariable("KAGARR_DISCORD_WEBHOOK");
 
@@ -122,28 +129,28 @@ namespace Kagarr.Api.V1.Health
 
             try
             {
-                using (var httpClient = new HttpClient())
+                var httpClient = _httpClientFactory.CreateClient("discord");
+
+                // Send a test embed
+                var payload = new
                 {
-                    // Send a test embed
-                    var payload = new
+                    embeds = new[]
                     {
-                        embeds = new[]
+                        new
                         {
-                            new
-                            {
-                                title = "Kagarr Test",
-                                description = "Connection test successful.",
-                                color = 3447003,
-                                footer = new { text = "Kagarr" }
-                            }
+                            title = "Kagarr Test",
+                            description = "Connection test successful.",
+                            color = 3447003,
+                            footer = new { text = "Kagarr" }
                         }
-                    };
+                    }
+                };
 
-                    var json = JsonConvert.SerializeObject(payload);
-                    using (var content = new StringContent(json, global::System.Text.Encoding.UTF8, "application/json"))
+                var json = JsonConvert.SerializeObject(payload);
+                using (var content = new StringContent(json, global::System.Text.Encoding.UTF8, "application/json"))
+                {
+                    using (var response = await httpClient.PostAsync(webhookUrl, content))
                     {
-                        var response = httpClient.PostAsync(webhookUrl, content).Result;
-
                         if (response.IsSuccessStatusCode)
                         {
                             return new TestResult { IsValid = true, Message = "Discord webhook test sent successfully." };
@@ -163,19 +170,21 @@ namespace Kagarr.Api.V1.Health
             }
         }
 
-        private static TestResult TestIndexerDefinition(IndexerDefinition definition)
+        private async Task<TestResult> TestIndexerDefinitionAsync(IndexerDefinition definition)
         {
             try
             {
                 IIndexer indexer = null;
+                var httpClient = _httpClientFactory.CreateClient("indexer");
+                httpClient.Timeout = TimeSpan.FromSeconds(30);
 
                 switch (definition.Implementation?.ToLowerInvariant())
                 {
                     case "newznab":
-                        indexer = NewznabIndexer.FromDefinition(definition);
+                        indexer = NewznabIndexer.FromDefinition(definition, httpClient);
                         break;
                     case "torznab":
-                        indexer = TorznabIndexer.FromDefinition(definition);
+                        indexer = TorznabIndexer.FromDefinition(definition, httpClient);
                         break;
                     default:
                         return new TestResult
@@ -186,7 +195,7 @@ namespace Kagarr.Api.V1.Health
                 }
 
                 // Try a search with an empty query to test connectivity
-                indexer.Search("test");
+                await indexer.SearchAsync("test");
 
                 return new TestResult { IsValid = true, Message = $"Successfully connected to {definition.Name}." };
             }
@@ -196,7 +205,7 @@ namespace Kagarr.Api.V1.Health
             }
         }
 
-        private static TestResult TestDownloadClientDefinition(DownloadClientDefinition definition)
+        private async Task<TestResult> TestDownloadClientDefinitionAsync(DownloadClientDefinition definition)
         {
             try
             {
@@ -205,10 +214,13 @@ namespace Kagarr.Api.V1.Health
                 switch (definition.Implementation?.ToLowerInvariant())
                 {
                     case "qbittorrent":
-                        client = Kagarr.Core.Download.Clients.QBittorrent.QBittorrentClient.FromDefinition(definition);
+                        client = Kagarr.Core.Download.Clients.QBittorrent.QBittorrentClient.FromDefinition(
+                            definition, _httpClientFactory.CreateClient(HttpClientNames.NoCookies));
                         break;
                     case "sabnzbd":
-                        client = Kagarr.Core.Download.Clients.Sabnzbd.SabnzbdClient.FromDefinition(definition);
+                        var sabClient = _httpClientFactory.CreateClient("downloadclient");
+                        sabClient.Timeout = TimeSpan.FromSeconds(30);
+                        client = Kagarr.Core.Download.Clients.Sabnzbd.SabnzbdClient.FromDefinition(definition, sabClient);
                         break;
                     default:
                         return new TestResult
@@ -219,7 +231,7 @@ namespace Kagarr.Api.V1.Health
                 }
 
                 // Try to get queue items to verify connectivity
-                client.GetItems();
+                await client.GetItemsAsync();
 
                 return new TestResult { IsValid = true, Message = $"Successfully connected to {definition.Name}." };
             }

@@ -1,10 +1,11 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Kagarr.Core.Deals
 {
     public interface IDealSource
     {
         string Name { get; }
-        List<GameDeal> GetDeals(string gameTitle, int? steamAppId);
+        Task<List<GameDeal>> GetDealsAsync(string gameTitle, int? steamAppId);
     }
 }

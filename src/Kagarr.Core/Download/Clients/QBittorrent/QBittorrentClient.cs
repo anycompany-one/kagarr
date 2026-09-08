@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 using Kagarr.Common.Instrumentation;
 using Kagarr.Core.Indexers;
 using Newtonsoft.Json;
@@ -16,69 +16,71 @@ namespace Kagarr.Core.Download.Clients.QBittorrent
         private readonly Logger _logger;
         private readonly QBittorrentSettings _settings;
         private readonly string _name;
-        private readonly CookieContainer _cookies;
+        private readonly HttpClient _httpClient;
 
-        public QBittorrentClient(string name, QBittorrentSettings settings)
+        // qBittorrent session cookie (SID) captured on login; sent manually because the
+        // shared IHttpClientFactory handler must not accumulate cookies across clients.
+        private string _sessionId;
+
+        public QBittorrentClient(string name, QBittorrentSettings settings, HttpClient httpClient)
         {
             _name = name;
             _settings = settings;
+            _httpClient = httpClient;
             _logger = KagarrLogger.GetLogger(this);
-            _cookies = new CookieContainer();
         }
 
         public string Name => _name;
         public string Protocol => "torrent";
 
-        public string Download(ReleaseInfo release)
+        public async Task<string> DownloadAsync(ReleaseInfo release)
         {
             _logger.Info("Sending '{0}' to qBittorrent", release.Title);
 
-            Authenticate();
+            await AuthenticateAsync();
 
             var baseUrl = _settings.GetBaseUrl();
 
-            using (var handler = new HttpClientHandler { CookieContainer = _cookies })
-            using (var httpClient = new HttpClient(handler))
+            var infoHash = TryGetInfoHash(release.DownloadUrl);
+
+            // If the hash cannot be determined from the URL, snapshot the existing
+            // torrents so the newly added one can be identified afterwards.
+            HashSet<string> existingHashes = null;
+            if (infoHash == null)
             {
-                var infoHash = TryGetInfoHash(release.DownloadUrl);
-
-                // If the hash cannot be determined from the URL, snapshot the existing
-                // torrents so the newly added one can be identified afterwards.
-                HashSet<string> existingHashes = null;
-                if (infoHash == null)
-                {
-                    existingHashes = GetTorrentHashes(httpClient, baseUrl);
-                }
-
-                var content = new MultipartFormDataContent
-                {
-                    { new StringContent(release.DownloadUrl), "urls" },
-                    { new StringContent(_settings.Category), "category" }
-                };
-
-                var response = httpClient.PostAsync($"{baseUrl}/api/v2/torrents/add", content).Result;
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var body = response.Content.ReadAsStringAsync().Result;
-                    _logger.Error("Failed to add torrent to qBittorrent. Status: {0}, Body: {1}", response.StatusCode, body);
-                    throw new HttpRequestException($"qBittorrent API error: {response.StatusCode}");
-                }
-
-                if (infoHash == null)
-                {
-                    infoHash = PollForNewTorrentHash(httpClient, baseUrl, existingHashes);
-                }
-
-                if (infoHash == null)
-                {
-                    _logger.Warn("Could not determine info hash for '{0}', tracking may not match", release.Title);
-                    infoHash = release.Guid ?? release.Title;
-                }
-
-                _logger.Info("Successfully sent '{0}' to qBittorrent (hash: {1})", release.Title, infoHash);
-                return infoHash;
+                existingHashes = await GetTorrentHashesAsync(baseUrl);
             }
+
+            using (var content = new MultipartFormDataContent
+            {
+                { new StringContent(release.DownloadUrl), "urls" },
+                { new StringContent(_settings.Category), "category" }
+            })
+            {
+                using (var response = await SendAsync(HttpMethod.Post, $"{baseUrl}/api/v2/torrents/add", content))
+                {
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        var body = await response.Content.ReadAsStringAsync();
+                        _logger.Error("Failed to add torrent to qBittorrent. Status: {0}, Body: {1}", response.StatusCode, body);
+                        throw new HttpRequestException($"qBittorrent API error: {response.StatusCode}");
+                    }
+                }
+            }
+
+            if (infoHash == null)
+            {
+                infoHash = await PollForNewTorrentHashAsync(baseUrl, existingHashes);
+            }
+
+            if (infoHash == null)
+            {
+                _logger.Warn("Could not determine info hash for '{0}', tracking may not match", release.Title);
+                infoHash = release.Guid ?? release.Title;
+            }
+
+            _logger.Info("Successfully sent '{0}' to qBittorrent (hash: {1})", release.Title, infoHash);
+            return infoHash;
         }
 
         public static string TryGetInfoHash(string downloadLink)
@@ -160,10 +162,10 @@ namespace Kagarr.Core.Download.Clients.QBittorrent
             return output.ToArray();
         }
 
-        private HashSet<string> GetTorrentHashes(HttpClient httpClient, string baseUrl)
+        private async Task<HashSet<string>> GetTorrentHashesAsync(string baseUrl)
         {
             var url = $"{baseUrl}/api/v2/torrents/info?category={Uri.EscapeDataString(_settings.Category)}";
-            var response = httpClient.GetStringAsync(url).Result;
+            var response = await GetStringAsync(url);
             var torrents = JsonConvert.DeserializeObject<List<JObject>>(response) ?? new List<JObject>();
 
             return torrents
@@ -172,16 +174,16 @@ namespace Kagarr.Core.Download.Clients.QBittorrent
                 .ToHashSet();
         }
 
-        private string PollForNewTorrentHash(HttpClient httpClient, string baseUrl, HashSet<string> existingHashes)
+        private async Task<string> PollForNewTorrentHashAsync(string baseUrl, HashSet<string> existingHashes)
         {
             for (var attempt = 0; attempt < 10; attempt++)
             {
-                global::System.Threading.Thread.Sleep(500);
+                await Task.Delay(500);
 
                 try
                 {
-                    var newHash = GetTorrentHashes(httpClient, baseUrl)
-                        .FirstOrDefault(h => !existingHashes.Contains(h));
+                    var hashes = await GetTorrentHashesAsync(baseUrl);
+                    var newHash = hashes.FirstOrDefault(h => !existingHashes.Contains(h));
                     if (newHash != null)
                     {
                         return newHash;
@@ -196,34 +198,30 @@ namespace Kagarr.Core.Download.Clients.QBittorrent
             return null;
         }
 
-        public List<DownloadClientItem> GetItems()
+        public async Task<List<DownloadClientItem>> GetItemsAsync()
         {
-            Authenticate();
+            await AuthenticateAsync();
 
             var baseUrl = _settings.GetBaseUrl();
 
-            using (var handler = new HttpClientHandler { CookieContainer = _cookies })
-            using (var httpClient = new HttpClient(handler))
-            {
-                var url = $"{baseUrl}/api/v2/torrents/info?category={Uri.EscapeDataString(_settings.Category)}";
-                var response = httpClient.GetStringAsync(url).Result;
-                var torrents = JsonConvert.DeserializeObject<List<JObject>>(response) ?? new List<JObject>();
+            var url = $"{baseUrl}/api/v2/torrents/info?category={Uri.EscapeDataString(_settings.Category)}";
+            var response = await GetStringAsync(url);
+            var torrents = JsonConvert.DeserializeObject<List<JObject>>(response) ?? new List<JObject>();
 
-                return torrents.Select(t => new DownloadClientItem
-                {
-                    DownloadId = t["hash"]?.ToString()?.ToLowerInvariant(),
-                    Title = t["name"]?.ToString(),
-                    TotalSize = t["total_size"]?.Value<long>() ?? 0,
-                    RemainingSize = (t["total_size"]?.Value<long>() ?? 0) - (t["completed"]?.Value<long>() ?? 0),
-                    OutputPath = t["content_path"]?.ToString(),
-                    Category = t["category"]?.ToString(),
-                    Status = MapStatus(t["state"]?.ToString()),
-                    DownloadClientName = _name
-                }).ToList();
-            }
+            return torrents.Select(t => new DownloadClientItem
+            {
+                DownloadId = t["hash"]?.ToString()?.ToLowerInvariant(),
+                Title = t["name"]?.ToString(),
+                TotalSize = t["total_size"]?.Value<long>() ?? 0,
+                RemainingSize = (t["total_size"]?.Value<long>() ?? 0) - (t["completed"]?.Value<long>() ?? 0),
+                OutputPath = t["content_path"]?.ToString(),
+                Category = t["category"]?.ToString(),
+                Status = MapStatus(t["state"]?.ToString()),
+                DownloadClientName = _name
+            }).ToList();
         }
 
-        private void Authenticate()
+        private async Task AuthenticateAsync()
         {
             if (string.IsNullOrEmpty(_settings.Username))
             {
@@ -232,23 +230,65 @@ namespace Kagarr.Core.Download.Clients.QBittorrent
 
             var baseUrl = _settings.GetBaseUrl();
 
-            using (var handler = new HttpClientHandler { CookieContainer = _cookies })
-            using (var httpClient = new HttpClient(handler))
+            using (var content = new FormUrlEncodedContent(new[]
             {
-                var content = new FormUrlEncodedContent(new[]
+                new KeyValuePair<string, string>("username", _settings.Username),
+                new KeyValuePair<string, string>("password", _settings.Password ?? string.Empty)
+            }))
+            {
+                using (var response = await SendAsync(HttpMethod.Post, $"{baseUrl}/api/v2/auth/login", content))
                 {
-                    new KeyValuePair<string, string>("username", _settings.Username),
-                    new KeyValuePair<string, string>("password", _settings.Password ?? string.Empty)
-                });
+                    var body = await response.Content.ReadAsStringAsync();
 
-                var response = httpClient.PostAsync($"{baseUrl}/api/v2/auth/login", content).Result;
-                var body = response.Content.ReadAsStringAsync().Result;
+                    if (!response.IsSuccessStatusCode || body.Contains("Fails", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new HttpRequestException("Failed to authenticate with qBittorrent");
+                    }
 
-                if (!response.IsSuccessStatusCode || body.Contains("Fails", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new HttpRequestException("Failed to authenticate with qBittorrent");
+                    _sessionId = ExtractSessionId(response) ?? _sessionId;
                 }
             }
+        }
+
+        internal static string ExtractSessionId(HttpResponseMessage response)
+        {
+            if (!response.Headers.TryGetValues("Set-Cookie", out var cookies))
+            {
+                return null;
+            }
+
+            foreach (var cookie in cookies)
+            {
+                var trimmed = cookie.Trim();
+                if (trimmed.StartsWith("SID=", StringComparison.OrdinalIgnoreCase))
+                {
+                    var end = trimmed.IndexOf(';');
+                    return end > 0 ? trimmed.Substring(4, end - 4) : trimmed.Substring(4);
+                }
+            }
+
+            return null;
+        }
+
+        private async Task<string> GetStringAsync(string url)
+        {
+            using (var response = await SendAsync(HttpMethod.Get, url))
+            {
+                response.EnsureSuccessStatusCode();
+                return await response.Content.ReadAsStringAsync();
+            }
+        }
+
+        private Task<HttpResponseMessage> SendAsync(HttpMethod method, string url, HttpContent content = null)
+        {
+            var request = new HttpRequestMessage(method, url) { Content = content };
+
+            if (!string.IsNullOrEmpty(_sessionId))
+            {
+                request.Headers.TryAddWithoutValidation("Cookie", $"SID={_sessionId}");
+            }
+
+            return _httpClient.SendAsync(request);
         }
 
         private static DownloadItemStatus MapStatus(string state)
@@ -281,10 +321,10 @@ namespace Kagarr.Core.Download.Clients.QBittorrent
             }
         }
 
-        public static QBittorrentClient FromDefinition(DownloadClientDefinition definition)
+        public static QBittorrentClient FromDefinition(DownloadClientDefinition definition, HttpClient httpClient)
         {
             var settings = JsonConvert.DeserializeObject<QBittorrentSettings>(definition.Settings) ?? new QBittorrentSettings();
-            return new QBittorrentClient(definition.Name, settings);
+            return new QBittorrentClient(definition.Name, settings, httpClient);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 using Kagarr.Common.Instrumentation;
 using Kagarr.Core.Deals;
 using Kagarr.Core.Games;
@@ -12,42 +13,44 @@ namespace Kagarr.Core.Notifications
 {
     public class DiscordWebhookService : INotificationService
     {
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly Logger _logger;
 
-        public DiscordWebhookService()
+        public DiscordWebhookService(IHttpClientFactory httpClientFactory)
         {
+            _httpClientFactory = httpClientFactory;
             _logger = KagarrLogger.GetLogger(this);
         }
 
-        public void OnGameAdded(Game game)
+        public Task OnGameAddedAsync(Game game)
         {
-            SendNotification(
+            return SendNotificationAsync(
                 "Game Added",
                 $"**{game.Title}** ({game.Year}) has been added to the library.",
                 3447003,
                 game.Images?.Find(i => i.CoverType == MediaCoverTypes.Cover)?.RemoteUrl);
         }
 
-        public void OnGameFileImported(Game game, string filePath)
+        public Task OnGameFileImportedAsync(Game game, string filePath)
         {
             var fileName = global::System.IO.Path.GetFileName(filePath);
-            SendNotification(
+            return SendNotificationAsync(
                 "Game Imported",
                 $"**{game.Title}** has been imported.\nFile: `{fileName}`",
                 2278750,
                 game.Images?.Find(i => i.CoverType == MediaCoverTypes.Cover)?.RemoteUrl);
         }
 
-        public void OnGameGrabbed(Game game, string releaseTitle)
+        public Task OnGameGrabbedAsync(Game game, string releaseTitle)
         {
-            SendNotification(
+            return SendNotificationAsync(
                 "Game Grabbed",
                 $"**{game.Title}** release grabbed.\nRelease: `{releaseTitle}`",
                 15844367,
                 game.Images?.Find(i => i.CoverType == MediaCoverTypes.Cover)?.RemoteUrl);
         }
 
-        public void OnDealFound(WishlistItem item, GameDeal deal)
+        public Task OnDealFoundAsync(WishlistItem item, GameDeal deal)
         {
             var priceText = deal.IsFree
                 ? "**FREE**"
@@ -73,10 +76,10 @@ namespace Kagarr.Core.Notifications
             var coverUrl = item.Images?.Find(i => i.CoverType == MediaCoverTypes.Cover)?.RemoteUrl;
 
             // Gold color for deal alerts
-            SendNotification("Deal Alert", description, 16766720, coverUrl);
+            return SendNotificationAsync("Deal Alert", description, 16766720, coverUrl);
         }
 
-        private void SendNotification(string title, string description, int color, string coverUrl)
+        private async Task SendNotificationAsync(string title, string description, int color, string coverUrl)
         {
             var webhookUrl = global::System.Environment.GetEnvironmentVariable("KAGARR_DISCORD_WEBHOOK");
             if (string.IsNullOrWhiteSpace(webhookUrl))
@@ -103,12 +106,12 @@ namespace Kagarr.Core.Notifications
 
                 var json = JsonConvert.SerializeObject(payload);
 
-                using (var httpClient = new HttpClient())
-                {
-                    using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
-                    {
-                        var response = httpClient.PostAsync(webhookUrl, content).Result;
+                var httpClient = _httpClientFactory.CreateClient("discord");
 
+                using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
+                {
+                    using (var response = await httpClient.PostAsync(webhookUrl, content))
+                    {
                         if (!response.IsSuccessStatusCode)
                         {
                             _logger.Warn("Discord webhook failed. Status: {0}", response.StatusCode);

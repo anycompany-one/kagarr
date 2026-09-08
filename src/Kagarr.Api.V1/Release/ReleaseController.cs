@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Kagarr.Core.Download;
 using Kagarr.Core.Indexers;
 using Kagarr.Http;
@@ -20,22 +21,22 @@ namespace Kagarr.Api.V1.Release
         }
 
         [HttpGet]
-        public ActionResult<List<ReleaseResource>> Search([FromQuery] string term)
+        public async Task<ActionResult<List<ReleaseResource>>> Search([FromQuery] string term)
         {
             if (string.IsNullOrWhiteSpace(term))
             {
                 return new List<ReleaseResource>();
             }
 
-            var releases = _indexerService.SearchAllIndexers(term);
+            var releases = await _indexerService.SearchAllIndexersAsync(term);
             return releases.Select(ReleaseResource.FromModel).ToList();
         }
 
         [HttpPost]
-        public ActionResult Grab([FromBody] ReleaseResource resource)
+        public async Task<ActionResult> Grab([FromBody] ReleaseResource resource)
         {
             var release = resource.ToModel();
-            var downloadId = _downloadClientService.SendToDownloadClient(
+            var downloadId = await _downloadClientService.SendToDownloadClientAsync(
                 release,
                 resource.GameId ?? 0,
                 resource.GameTitle ?? release.Title);
