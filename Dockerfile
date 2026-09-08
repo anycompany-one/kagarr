@@ -20,6 +20,7 @@ COPY src/Kagarr.Host/Kagarr.Host.csproj src/Kagarr.Host/
 COPY src/Kagarr.Console/Kagarr.Console.csproj src/Kagarr.Console/
 COPY src/Kagarr.Test.Common/Kagarr.Test.Common.csproj src/Kagarr.Test.Common/
 COPY src/Kagarr.Core.Test/Kagarr.Core.Test.csproj src/Kagarr.Core.Test/
+COPY src/Kagarr.Host.Test/Kagarr.Host.Test.csproj src/Kagarr.Host.Test/
 COPY src/Directory.Build.props src/
 COPY src/Kagarr.sln src/
 COPY global.json .
