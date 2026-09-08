@@ -45,6 +45,14 @@ namespace Kagarr.Core.Organizer
             return $"{baseName}{extension}";
         }
 
+        private const string FallbackName = "Unknown Game";
+
+        // Fixed Windows-superset set of invalid characters so sanitization is
+        // identical on every platform (Path.GetInvalidFileNameChars() only
+        // returns '/' and NUL on Linux, which lets names like ".." escape the
+        // library root via Path.Combine).
+        private static readonly char[] InvalidFileNameChars = { '<', '>', ':', '"', '/', '\\', '|', '?', '*' };
+
         public static string CleanFileName(string name)
         {
             if (string.IsNullOrEmpty(name))
@@ -52,22 +60,30 @@ namespace Kagarr.Core.Organizer
                 return string.Empty;
             }
 
-            var invalid = global::System.IO.Path.GetInvalidFileNameChars();
             var result = new global::System.Text.StringBuilder(name.Length);
 
             foreach (var c in name)
             {
-                if (global::System.Array.IndexOf(invalid, c) < 0)
-                {
-                    result.Append(c);
-                }
-                else
+                if (c < 0x20 || global::System.Array.IndexOf(InvalidFileNameChars, c) >= 0)
                 {
                     result.Append('_');
                 }
+                else
+                {
+                    result.Append(c);
+                }
             }
 
-            return result.ToString().Trim();
+            // Trailing dots and spaces are invalid on Windows and allow
+            // relative path segments ('.', '..') to survive otherwise.
+            var cleaned = result.ToString().Trim().TrimEnd('.', ' ');
+
+            if (cleaned.Length == 0 || cleaned == "." || cleaned == "..")
+            {
+                return FallbackName;
+            }
+
+            return cleaned;
         }
     }
 }
