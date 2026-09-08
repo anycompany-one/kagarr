@@ -78,10 +78,17 @@ namespace Kagarr.Core.MetadataSource.Igdb
 
                         var authResponse = JsonConvert.DeserializeObject<IgdbAuthResponse>(responseBody);
 
+                        if (authResponse == null || string.IsNullOrWhiteSpace(authResponse.AccessToken))
+                        {
+                            _logger.Error("IGDB token endpoint returned an unexpected body: {0}", responseBody);
+                            throw new HttpRequestException("IGDB token endpoint returned an unexpected response body (no access token)");
+                        }
+
                         _accessToken = authResponse.AccessToken;
 
-                        // Expire 5 minutes early to avoid edge cases
-                        _tokenExpiry = DateTime.UtcNow.AddSeconds(authResponse.ExpiresIn - 300);
+                        // Expire 5 minutes early to avoid edge cases, but never less than 30 seconds from now
+                        var lifetimeSeconds = Math.Max(authResponse.ExpiresIn - 300, 30);
+                        _tokenExpiry = DateTime.UtcNow.AddSeconds(lifetimeSeconds);
 
                         _logger.Info("Successfully obtained IGDB access token, expires in {0} seconds", authResponse.ExpiresIn);
 
