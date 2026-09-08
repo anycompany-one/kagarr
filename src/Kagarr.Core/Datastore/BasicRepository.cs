@@ -127,6 +127,14 @@ namespace Kagarr.Core.Datastore
             // Simple implementation - for complex queries, override in derived classes
             return All().AsQueryable().Where(where).ToList();
         }
+
+        protected List<TModel> QueryWhere(string whereClause, object parameters)
+        {
+            // Filters in SQL rather than loading the whole table into memory.
+            // The where clause must only contain column references and @-parameters, never user input.
+            using var conn = _database.OpenConnection();
+            return conn.Query<TModel>($"SELECT * FROM \"{_table}\" WHERE {whereClause}", parameters).ToList();
+        }
     }
 
     public class ModelNotFoundException : Exception

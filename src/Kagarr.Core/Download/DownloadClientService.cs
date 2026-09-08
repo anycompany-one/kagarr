@@ -82,14 +82,22 @@ namespace Kagarr.Core.Download
                     // Track the download so CompletedDownloadJob can auto-import it
                     if (gameId > 0 && !string.IsNullOrWhiteSpace(downloadId))
                     {
-                        _trackingRepository.Insert(new DownloadTracking
+                        var existing = _trackingRepository.FindByDownloadId(downloadId);
+                        if (existing != null)
                         {
-                            DownloadId = downloadId,
-                            GameId = gameId,
-                            GameTitle = gameTitle ?? release.Title,
-                            SourceTitle = release.Title,
-                            AddedDate = DateTime.UtcNow
-                        });
+                            _logger.Info("Download '{0}' is already tracked, not creating a duplicate tracking record", downloadId);
+                        }
+                        else
+                        {
+                            _trackingRepository.Insert(new DownloadTracking
+                            {
+                                DownloadId = downloadId,
+                                GameId = gameId,
+                                GameTitle = gameTitle ?? release.Title,
+                                SourceTitle = release.Title,
+                                AddedDate = DateTime.UtcNow
+                            });
+                        }
 
                         _historyService.RecordEvent(
                             HistoryEventType.Grabbed,

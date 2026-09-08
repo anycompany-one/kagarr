@@ -22,7 +22,7 @@ namespace Kagarr.Core.History
 
         public List<HistoryRecord> FindByGameId(int gameId)
         {
-            return Query(h => h.GameId == gameId)
+            return QueryWhere("\"GameId\" = @GameId", new { GameId = gameId })
                 .OrderByDescending(h => h.Date)
                 .ToList();
         }

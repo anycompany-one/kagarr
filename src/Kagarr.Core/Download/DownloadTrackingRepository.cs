@@ -12,7 +12,8 @@ namespace Kagarr.Core.Download
 
         public DownloadTracking FindByDownloadId(string downloadId)
         {
-            return Query(t => t.DownloadId == downloadId).SingleOrDefault();
+            // FirstOrDefault: duplicate DownloadIds must not crash the import poll
+            return QueryWhere("\"DownloadId\" = @DownloadId", new { DownloadId = downloadId }).FirstOrDefault();
         }
     }
 }
