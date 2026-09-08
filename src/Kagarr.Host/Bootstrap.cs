@@ -180,7 +180,7 @@ namespace Kagarr.Host
             if (global::System.IO.File.Exists(dbPath))
             {
                 var backupPath = dbPath + ".bak";
-                global::System.IO.File.Copy(dbPath, backupPath, true);
+                SqliteDatabaseBackup.BackupTo(dbPath, backupPath);
             }
 
             // Run migrations

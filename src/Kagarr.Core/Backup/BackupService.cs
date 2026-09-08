@@ -49,13 +49,13 @@ namespace Kagarr.Core.Backup
 
             using (var archive = ZipFile.Open(zipPath, ZipArchiveMode.Create))
             {
-                // Use SQLite backup API via temp copy for safe live backup
+                // Use SQLite online backup API for a consistent live backup (includes WAL contents)
                 if (File.Exists(dbPath))
                 {
                     var tempDb = Path.Combine(_dataPath, "kagarr_backup_temp.db");
                     try
                     {
-                        File.Copy(dbPath, tempDb, true);
+                        SqliteDatabaseBackup.BackupTo(dbPath, tempDb);
                         archive.CreateEntryFromFile(tempDb, "kagarr.db");
                     }
                     finally
