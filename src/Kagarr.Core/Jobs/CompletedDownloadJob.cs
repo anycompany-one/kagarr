@@ -14,6 +14,9 @@ namespace Kagarr.Core.Jobs
 {
     public class CompletedDownloadJob : BackgroundService
     {
+        internal const int MaxImportAttempts = 5;
+        internal const int RetryBackoffMinutes = 15;
+
         private readonly IDownloadClientService _downloadClientService;
         private readonly IDownloadTrackingRepository _trackingRepository;
         private readonly IImportGameFile _importService;
@@ -68,7 +71,7 @@ namespace Kagarr.Core.Jobs
             }
         }
 
-        private void ProcessCompletedDownloads()
+        internal void ProcessCompletedDownloads()
         {
             var queue = _downloadClientService.GetQueue();
             var completedItems = queue.Where(i => i.Status == DownloadItemStatus.Completed).ToList();
@@ -100,6 +103,16 @@ namespace Kagarr.Core.Jobs
             {
                 // Not tracked by Kagarr (user may have added it manually to the client)
                 return;
+            }
+
+            // Back off between failed attempts: wait 15 minutes * attempts before retrying
+            if (tracking.ImportAttempts > 0 && tracking.LastAttemptDate.HasValue)
+            {
+                var nextAttempt = tracking.LastAttemptDate.Value.AddMinutes(RetryBackoffMinutes * tracking.ImportAttempts);
+                if (DateTime.UtcNow < nextAttempt)
+                {
+                    return;
+                }
             }
 
             _logger.Info("Auto-importing completed download '{0}' for game '{1}'", item.Title, tracking.GameTitle);
@@ -145,13 +158,40 @@ namespace Kagarr.Core.Jobs
             else
             {
                 var errors = string.Join("; ", results.SelectMany(r => r.Errors));
-                _logger.Warn("Auto-import failed for '{0}': {1}", item.Title, errors);
-                _historyService.RecordEvent(
-                    HistoryEventType.ImportFailed,
-                    tracking.GameId,
-                    tracking.GameTitle,
-                    item.Title,
-                    errors);
+
+                tracking.ImportAttempts++;
+                tracking.LastAttemptDate = DateTime.UtcNow;
+
+                if (tracking.ImportAttempts >= MaxImportAttempts)
+                {
+                    _logger.Warn("Auto-import failed for '{0}' after {1} attempts, giving up: {2}", item.Title, tracking.ImportAttempts, errors);
+                    _historyService.RecordEvent(
+                        HistoryEventType.ImportFailed,
+                        tracking.GameId,
+                        tracking.GameTitle,
+                        item.Title,
+                        $"Giving up after {tracking.ImportAttempts} attempts: {errors}");
+
+                    // Stop tracking so we no longer retry
+                    _trackingRepository.Delete(tracking);
+                }
+                else
+                {
+                    _logger.Warn("Auto-import failed for '{0}' (attempt {1} of {2}): {3}", item.Title, tracking.ImportAttempts, MaxImportAttempts, errors);
+
+                    // Only record history on the first failure to avoid spamming history on retries
+                    if (tracking.ImportAttempts == 1)
+                    {
+                        _historyService.RecordEvent(
+                            HistoryEventType.ImportFailed,
+                            tracking.GameId,
+                            tracking.GameTitle,
+                            item.Title,
+                            errors);
+                    }
+
+                    _trackingRepository.Update(tracking);
+                }
             }
         }
     }

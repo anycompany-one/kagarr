@@ -1,20 +1,25 @@
+using System;
 using System.Collections.Generic;
 using FluentAssertions;
 using Kagarr.Core.Download;
 using Kagarr.Core.History;
+using Kagarr.Core.Jobs;
 using Kagarr.Core.MediaFiles;
+using Kagarr.Core.RemotePathMappings;
 using Moq;
 using NUnit.Framework;
 
 namespace Kagarr.Core.Test.Jobs
 {
     [TestFixture]
-    public class CompletedDownloadJobTests
+    public sealed class CompletedDownloadJobTests : IDisposable
     {
         private Mock<IDownloadClientService> _downloadClientService;
         private Mock<IDownloadTrackingRepository> _trackingRepo;
         private Mock<IImportGameFile> _importService;
         private Mock<IHistoryService> _historyService;
+        private Mock<IRemotePathMappingService> _remotePathMappingService;
+        private CompletedDownloadJob _job;
 
         [SetUp]
         public void Setup()
@@ -23,78 +28,160 @@ namespace Kagarr.Core.Test.Jobs
             _trackingRepo = new Mock<IDownloadTrackingRepository>();
             _importService = new Mock<IImportGameFile>();
             _historyService = new Mock<IHistoryService>();
+            _remotePathMappingService = new Mock<IRemotePathMappingService>();
+
+            _remotePathMappingService
+                .Setup(s => s.RemapRemoteToLocal(It.IsAny<string>(), It.IsAny<string>()))
+                .Returns<string, string>((host, path) => path);
+
+            _job = new CompletedDownloadJob(
+                _downloadClientService.Object,
+                _trackingRepo.Object,
+                _importService.Object,
+                _historyService.Object,
+                _remotePathMappingService.Object);
         }
 
-        [Test]
-        public void Completed_item_with_tracking_should_trigger_import()
+        [TearDown]
+        public void Dispose()
         {
-            var tracking = new DownloadTracking
-            {
-                Id = 1,
-                DownloadId = "abc123",
-                GameId = 42,
-                GameTitle = "Baldur's Gate 3"
-            };
+            _job?.Dispose();
+        }
 
-            _trackingRepo.Setup(r => r.FindByDownloadId("abc123")).Returns(tracking);
-
-            _importService.Setup(s => s.Import("/downloads/bg3.iso", 42, It.IsAny<TransferMode>()))
-                .Returns(new ImportResult { Success = true, SourcePath = "/downloads/bg3.iso" });
-
+        private DownloadClientItem GivenCompletedItem(string downloadId = "abc123")
+        {
             var item = new DownloadClientItem
             {
-                DownloadId = "abc123",
+                DownloadId = downloadId,
                 Title = "Baldurs.Gate.3-RUNE",
                 Status = DownloadItemStatus.Completed,
-                OutputPath = "/downloads/bg3.iso",
+                OutputPath = "/nonexistent/downloads/bg3.iso",
                 DownloadClientName = "qBittorrent"
             };
 
             _downloadClientService.Setup(s => s.GetQueue())
                 .Returns(new List<DownloadClientItem> { item });
 
-            // We can't easily call ProcessCompletedDownloads (it's called from ExecuteAsync).
-            // Instead we verify the import service would be called with the correct params
-            // by testing the tracking lookup + import expectation.
-            _trackingRepo.Object.FindByDownloadId("abc123").Should().NotBeNull();
-            _trackingRepo.Object.FindByDownloadId("abc123").GameId.Should().Be(42);
+            return item;
+        }
+
+        private DownloadTracking GivenTracking(string downloadId = "abc123", int attempts = 0, DateTime? lastAttempt = null)
+        {
+            var tracking = new DownloadTracking
+            {
+                Id = 1,
+                DownloadId = downloadId,
+                GameId = 42,
+                GameTitle = "Baldur's Gate 3",
+                ImportAttempts = attempts,
+                LastAttemptDate = lastAttempt
+            };
+
+            _trackingRepo.Setup(r => r.FindByDownloadId(downloadId)).Returns(tracking);
+
+            return tracking;
+        }
+
+        private void GivenImportFails()
+        {
+            _importService.Setup(s => s.Import(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<TransferMode>()))
+                .Returns(new ImportResult { Success = false, Errors = new List<string> { "File not found" } });
         }
 
         [Test]
-        public void Completed_item_without_tracking_should_not_crash()
+        public void Successful_import_should_delete_tracking_and_record_history()
         {
+            GivenCompletedItem();
+            var tracking = GivenTracking();
+
+            _importService.Setup(s => s.Import(It.IsAny<string>(), 42, It.IsAny<TransferMode>()))
+                .Returns(new ImportResult { Success = true });
+
+            _job.ProcessCompletedDownloads();
+
+            _trackingRepo.Verify(r => r.Delete(tracking), Times.Once);
+            _historyService.Verify(
+                h => h.RecordEvent(HistoryEventType.Imported, 42, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+                Times.Once);
+        }
+
+        [Test]
+        public void Completed_item_without_tracking_should_not_import()
+        {
+            GivenCompletedItem();
             _trackingRepo.Setup(r => r.FindByDownloadId(It.IsAny<string>())).Returns((DownloadTracking)null);
 
-            var result = _trackingRepo.Object.FindByDownloadId("unknown-id");
-            result.Should().BeNull();
+            _job.ProcessCompletedDownloads();
 
-            // Verify import is never called for untracked downloads
             _importService.Verify(s => s.Import(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<TransferMode>()), Times.Never);
         }
 
         [Test]
-        public void Failed_import_should_record_history_event()
+        public void First_failed_import_should_record_history_and_increment_attempts()
         {
-            // Setup: tracking exists but import fails
-            var tracking = new DownloadTracking
-            {
-                Id = 1,
-                DownloadId = "fail-123",
-                GameId = 10,
-                GameTitle = "Test Game"
-            };
+            GivenCompletedItem();
+            var tracking = GivenTracking();
+            GivenImportFails();
 
-            _trackingRepo.Setup(r => r.FindByDownloadId("fail-123")).Returns(tracking);
+            _job.ProcessCompletedDownloads();
 
-            _importService.Setup(s => s.Import(It.IsAny<string>(), 10, It.IsAny<TransferMode>()))
-                .Returns(new ImportResult
-                {
-                    Success = false,
-                    Errors = new List<string> { "File not found" }
-                });
-
-            // Verify tracking record is preserved (not deleted) on failure
+            tracking.ImportAttempts.Should().Be(1);
+            tracking.LastAttemptDate.Should().NotBeNull();
+            _trackingRepo.Verify(r => r.Update(tracking), Times.Once);
             _trackingRepo.Verify(r => r.Delete(It.IsAny<DownloadTracking>()), Times.Never);
+            _historyService.Verify(
+                h => h.RecordEvent(HistoryEventType.ImportFailed, 42, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+                Times.Once);
+        }
+
+        [Test]
+        public void Failed_import_within_backoff_window_should_be_skipped()
+        {
+            GivenCompletedItem();
+            var tracking = GivenTracking(attempts: 1, lastAttempt: DateTime.UtcNow.AddMinutes(-5));
+            GivenImportFails();
+
+            _job.ProcessCompletedDownloads();
+
+            _importService.Verify(s => s.Import(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<TransferMode>()), Times.Never);
+            tracking.ImportAttempts.Should().Be(1);
+        }
+
+        [Test]
+        public void Failed_import_after_backoff_elapsed_should_retry_without_history_spam()
+        {
+            GivenCompletedItem();
+            var tracking = GivenTracking(attempts: 2, lastAttempt: DateTime.UtcNow.AddMinutes(-31));
+            GivenImportFails();
+
+            _job.ProcessCompletedDownloads();
+
+            tracking.ImportAttempts.Should().Be(3);
+            _trackingRepo.Verify(r => r.Update(tracking), Times.Once);
+
+            // Retries after the first failure must not append additional history rows
+            _historyService.Verify(
+                h => h.RecordEvent(HistoryEventType.ImportFailed, It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+                Times.Never);
+        }
+
+        [Test]
+        public void Failed_import_should_give_up_after_max_attempts()
+        {
+            GivenCompletedItem();
+            var tracking = GivenTracking(
+                attempts: CompletedDownloadJob.MaxImportAttempts - 1,
+                lastAttempt: DateTime.UtcNow.AddHours(-24));
+            GivenImportFails();
+
+            _job.ProcessCompletedDownloads();
+
+            tracking.ImportAttempts.Should().Be(CompletedDownloadJob.MaxImportAttempts);
+            _trackingRepo.Verify(r => r.Delete(tracking), Times.Once);
+            _trackingRepo.Verify(r => r.Update(It.IsAny<DownloadTracking>()), Times.Never);
+            _historyService.Verify(
+                h => h.RecordEvent(HistoryEventType.ImportFailed, 42, It.IsAny<string>(), It.IsAny<string>(), It.Is<string>(d => d.Contains("Giving up"))),
+                Times.Once);
         }
     }
 }

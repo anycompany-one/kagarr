@@ -10,5 +10,7 @@ namespace Kagarr.Core.Download
         public string GameTitle { get; set; }
         public string SourceTitle { get; set; }
         public DateTime AddedDate { get; set; }
+        public int ImportAttempts { get; set; }
+        public DateTime? LastAttemptDate { get; set; }
     }
 }
