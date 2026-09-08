@@ -50,6 +50,17 @@ namespace Kagarr.Host.Authentication
                 return;
             }
 
+            // Allow media cover images without auth. The frontend loads them via plain
+            // <img src> tags, which cannot send the X-Api-Key header. Covers are
+            // non-sensitive (public IGDB artwork) and the controller validates the
+            // file name against path traversal.
+            if (HttpMethods.IsGet(context.Request.Method) &&
+                path.StartsWith("/api/v1/mediacover/", global::System.StringComparison.OrdinalIgnoreCase))
+            {
+                await _next(context);
+                return;
+            }
+
             // Only the X-Api-Key header is accepted; query-string keys leak into
             // logs, proxies and browser history.
             var providedKey = context.Request.Headers[ApiKeyHeader].ToString();

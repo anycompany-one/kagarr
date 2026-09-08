@@ -1,4 +1,5 @@
 using System.Net.Http;
+using System.Threading.Tasks;
 using Kagarr.Common.Instrumentation;
 using Kagarr.Core.Games;
 using NLog;
@@ -7,16 +8,18 @@ namespace Kagarr.Core.MediaCovers
 {
     public class MediaCoverService : IMapCoversToLocal
     {
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly Logger _logger;
         private readonly string _coverRootFolder;
 
-        public MediaCoverService()
+        public MediaCoverService(string dataPath, IHttpClientFactory httpClientFactory)
         {
+            _httpClientFactory = httpClientFactory;
             _logger = KagarrLogger.GetLogger(this);
 
-            // Store covers in the app data directory under MediaCover
-            var appData = global::System.Environment.GetFolderPath(global::System.Environment.SpecialFolder.ApplicationData);
-            _coverRootFolder = global::System.IO.Path.Combine(appData, "Kagarr", "MediaCover");
+            // Store covers in the configured data directory so they survive
+            // container recreation (dataPath comes from --data/KAGARR_DATA).
+            _coverRootFolder = global::System.IO.Path.Combine(dataPath, "MediaCover");
 
             if (!global::System.IO.Directory.Exists(_coverRootFolder))
             {
@@ -24,7 +27,7 @@ namespace Kagarr.Core.MediaCovers
             }
         }
 
-        public void ConvertToLocalUrls(int gameId, global::System.Collections.Generic.IEnumerable<Games.MediaCover> covers)
+        public async Task ConvertToLocalUrlsAsync(int gameId, global::System.Collections.Generic.IEnumerable<Games.MediaCover> covers)
         {
             if (covers == null)
             {
@@ -47,7 +50,7 @@ namespace Kagarr.Core.MediaCovers
                 cover.Url = $"/api/v1/mediacover/{gameId}/{localFileName}";
 
                 // Ensure the cover is downloaded
-                EnsureCoverExists(gameId, cover);
+                await EnsureCoverExistsAsync(gameId, cover);
             }
         }
 
@@ -57,6 +60,40 @@ namespace Kagarr.Core.MediaCovers
             var extension = ".jpg";
 
             return global::System.IO.Path.Combine(gameCoverPath, coverType.ToString().ToLowerInvariant() + extension);
+        }
+
+        public string GetStoredCoverPath(int gameId, string fileName)
+        {
+            if (!IsSafeFileName(fileName))
+            {
+                return null;
+            }
+
+            var path = global::System.IO.Path.Combine(_coverRootFolder, gameId.ToString(), fileName);
+
+            return global::System.IO.File.Exists(path) ? path : null;
+        }
+
+        public static bool IsSafeFileName(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return false;
+            }
+
+            // Reject anything that could escape the game's cover folder:
+            // path separators, parent-directory segments or rooted paths.
+            if (fileName.Contains('/') || fileName.Contains('\\') || fileName.Contains(".."))
+            {
+                return false;
+            }
+
+            if (global::System.IO.Path.IsPathRooted(fileName))
+            {
+                return false;
+            }
+
+            return global::System.IO.Path.GetFileName(fileName) == fileName;
         }
 
         private string GetGameCoverPath(int gameId)
@@ -71,7 +108,7 @@ namespace Kagarr.Core.MediaCovers
             return path;
         }
 
-        private void EnsureCoverExists(int gameId, Games.MediaCover cover)
+        private async Task EnsureCoverExistsAsync(int gameId, Games.MediaCover cover)
         {
             var localPath = GetCoverPath(gameId, cover.CoverType);
 
@@ -89,20 +126,18 @@ namespace Kagarr.Core.MediaCovers
             {
                 _logger.Debug("Downloading cover for game {0}: {1}", gameId, cover.RemoteUrl);
 
-                using (var httpClient = new HttpClient())
+                var httpClient = _httpClientFactory.CreateClient("mediacover");
+                var imageBytes = await httpClient.GetByteArrayAsync(cover.RemoteUrl);
+
+                var directory = global::System.IO.Path.GetDirectoryName(localPath);
+                if (!string.IsNullOrEmpty(directory) && !global::System.IO.Directory.Exists(directory))
                 {
-                    var imageBytes = httpClient.GetByteArrayAsync(cover.RemoteUrl).Result;
-
-                    var directory = global::System.IO.Path.GetDirectoryName(localPath);
-                    if (!string.IsNullOrEmpty(directory) && !global::System.IO.Directory.Exists(directory))
-                    {
-                        global::System.IO.Directory.CreateDirectory(directory);
-                    }
-
-                    global::System.IO.File.WriteAllBytes(localPath, imageBytes);
-
-                    _logger.Debug("Successfully downloaded cover to {0}", localPath);
+                    global::System.IO.Directory.CreateDirectory(directory);
                 }
+
+                await global::System.IO.File.WriteAllBytesAsync(localPath, imageBytes);
+
+                _logger.Debug("Successfully downloaded cover to {0}", localPath);
             }
             catch (HttpRequestException ex)
             {

@@ -95,6 +95,31 @@ namespace Kagarr.Host.Test.Authentication
         }
 
         [Test]
+        public async Task should_allow_mediacover_get_without_api_key()
+        {
+            // Covers are loaded by the frontend via plain <img src> tags, which
+            // cannot send the X-Api-Key header.
+            var context = CreateContext("/api/v1/mediacover/42/cover.jpg");
+            context.Request.Method = "GET";
+
+            var nextCalled = await Invoke(context);
+
+            nextCalled.Should().BeTrue();
+        }
+
+        [Test]
+        public async Task should_reject_non_get_mediacover_without_api_key()
+        {
+            var context = CreateContext("/api/v1/mediacover/42/cover.jpg");
+            context.Request.Method = "POST";
+
+            var nextCalled = await Invoke(context);
+
+            nextCalled.Should().BeFalse();
+            context.Response.StatusCode.Should().Be(401);
+        }
+
+        [Test]
         public async Task should_allow_static_files_without_api_key()
         {
             var context = CreateContext("/index.html");
