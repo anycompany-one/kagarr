@@ -157,17 +157,6 @@ namespace Kagarr.Host
 
                 c.AddSecurityDefinition("X-Api-Key", apiKeyHeader);
 
-                var apiKeyQuery = new OpenApiSecurityScheme
-                {
-                    Name = "apikey",
-                    Type = SecuritySchemeType.ApiKey,
-                    Scheme = "apiKey",
-                    Description = "API key passed as query parameter",
-                    In = ParameterLocation.Query
-                };
-
-                c.AddSecurityDefinition("apikey", apiKeyQuery);
-
                 c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
                 {
                     [new OpenApiSecuritySchemeReference("X-Api-Key", document)] = new global::System.Collections.Generic.List<string>()

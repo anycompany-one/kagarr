@@ -1,3 +1,4 @@
+using Kagarr.Common.Serialization;
 using Kagarr.Core.Indexers;
 using Kagarr.Http.REST;
 
@@ -24,7 +25,7 @@ namespace Kagarr.Api.V1.Indexers
                 Id = model.Id,
                 Name = model.Name,
                 Implementation = model.Implementation,
-                Settings = model.Settings,
+                Settings = SettingsSecretRedactor.RedactSecrets(model.Settings),
                 EnableRss = model.EnableRss,
                 EnableSearch = model.EnableSearch,
                 Priority = model.Priority

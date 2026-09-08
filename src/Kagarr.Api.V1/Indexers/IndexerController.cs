@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Kagarr.Common.Serialization;
 using Kagarr.Core.Indexers;
 using Kagarr.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -41,6 +42,15 @@ namespace Kagarr.Api.V1.Indexers
         {
             var model = resource.ToModel();
             model.Id = id;
+
+            // Secrets are redacted on GET; if the client sent masked values back
+            // unchanged, restore the stored secrets so credentials aren't wiped.
+            var existing = _indexerService.Get(id);
+            if (existing != null)
+            {
+                model.Settings = SettingsSecretRedactor.RestoreSecrets(model.Settings, existing.Settings);
+            }
+
             return IndexerResource.FromModel(_indexerService.Update(model));
         }
 

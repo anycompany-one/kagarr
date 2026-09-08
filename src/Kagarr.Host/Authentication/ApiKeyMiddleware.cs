@@ -10,7 +10,6 @@ namespace Kagarr.Host.Authentication
     public class ApiKeyMiddleware
     {
         private const string ApiKeyHeader = "X-Api-Key";
-        private const string ApiKeyQuery = "apikey";
 
         private readonly RequestDelegate _next;
         private readonly Logger _logger;
@@ -43,34 +42,24 @@ namespace Kagarr.Host.Authentication
                 return;
             }
 
-            // Allow system status endpoint without auth (used by Docker HEALTHCHECK)
+            // Allow system status endpoint without auth (used by Docker HEALTHCHECK).
+            // The endpoint only returns the app name and version.
             if (path.Equals("/api/v1/system/status", global::System.StringComparison.OrdinalIgnoreCase))
             {
                 await _next(context);
                 return;
             }
 
-            // Allow Swagger docs without auth
-            if (path.StartsWith("/api/docs", global::System.StringComparison.OrdinalIgnoreCase))
-            {
-                await _next(context);
-                return;
-            }
-
-            // Check header first, then query string
+            // Only the X-Api-Key header is accepted; query-string keys leak into
+            // logs, proxies and browser history.
             var providedKey = context.Request.Headers[ApiKeyHeader].ToString();
-
-            if (string.IsNullOrWhiteSpace(providedKey))
-            {
-                providedKey = context.Request.Query[ApiKeyQuery].ToString();
-            }
 
             if (string.IsNullOrWhiteSpace(providedKey))
             {
                 _logger.Warn("Unauthorized API request from {0}: no API key", context.Connection.RemoteIpAddress);
                 context.Response.StatusCode = 401;
                 context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync("{\"error\":\"API key required. Set X-Api-Key header or ?apikey= query parameter.\"}");
+                await context.Response.WriteAsync("{\"error\":\"API key required. Set the X-Api-Key header.\"}");
                 return;
             }
 
