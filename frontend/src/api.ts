@@ -43,7 +43,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     throw new Error(`API error: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 export interface TestResult {
@@ -199,6 +200,64 @@ export function testNewDownloadClient(config: {
     method: 'POST',
     body: JSON.stringify(config),
   });
+}
+
+// Indexers
+export interface IndexerResource {
+  id: number;
+  name: string;
+  implementation: string;
+  settings: string;
+  enableRss: boolean;
+  enableSearch: boolean;
+  priority: number;
+}
+
+export function getIndexers(): Promise<IndexerResource[]> {
+  return request<IndexerResource[]>('/indexer');
+}
+
+export function saveIndexer(
+  indexer: Omit<IndexerResource, 'id'>,
+  id?: number | null,
+): Promise<IndexerResource> {
+  return request<IndexerResource>(id ? `/indexer/${id}` : '/indexer', {
+    method: id ? 'PUT' : 'POST',
+    body: JSON.stringify(indexer),
+  });
+}
+
+export function deleteIndexer(id: number): Promise<void> {
+  return request<void>(`/indexer/${id}`, { method: 'DELETE' });
+}
+
+// Download clients
+export interface DownloadClientResource {
+  id: number;
+  name: string;
+  implementation: string;
+  settings: string;
+  protocol: string;
+  priority: number;
+  enable: boolean;
+}
+
+export function getDownloadClients(): Promise<DownloadClientResource[]> {
+  return request<DownloadClientResource[]>('/downloadclient');
+}
+
+export function saveDownloadClient(
+  client: Omit<DownloadClientResource, 'id'>,
+  id?: number | null,
+): Promise<DownloadClientResource> {
+  return request<DownloadClientResource>(id ? `/downloadclient/${id}` : '/downloadclient', {
+    method: id ? 'PUT' : 'POST',
+    body: JSON.stringify(client),
+  });
+}
+
+export function deleteDownloadClient(id: number): Promise<void> {
+  return request<void>(`/downloadclient/${id}`, { method: 'DELETE' });
 }
 
 // History

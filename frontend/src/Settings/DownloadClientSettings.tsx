@@ -1,22 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const key = localStorage.getItem('kagarr_api_key');
-  if (key) headers['X-Api-Key'] = key;
-  return headers;
-}
-
-interface DownloadClientResource {
-  id: number;
-  name: string;
-  implementation: string;
-  settings: string;
-  protocol: string;
-  priority: number;
-  enable: boolean;
-}
+import {
+  DownloadClientResource,
+  getDownloadClients,
+  saveDownloadClient,
+  deleteDownloadClient,
+} from '../api';
 
 interface ClientForm {
   name: string;
@@ -55,8 +44,7 @@ function DownloadClientSettings() {
 
   const fetchClients = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/downloadclient', { headers: getAuthHeaders() });
-      setClients(await res.json());
+      setClients(await getDownloadClients());
     } catch {
       setError(t('settings.failedToLoadClients'));
     } finally {
@@ -83,13 +71,7 @@ function DownloadClientSettings() {
     };
 
     try {
-      const method = editId ? 'PUT' : 'POST';
-      const url = editId ? `/api/v1/downloadclient/${editId}` : '/api/v1/downloadclient';
-      await fetch(url, {
-        method,
-        headers: getAuthHeaders(),
-        body: JSON.stringify(body),
-      });
+      await saveDownloadClient(body, editId);
       setShowForm(false);
       setForm(EMPTY_FORM);
       setEditId(null);
@@ -118,7 +100,7 @@ function DownloadClientSettings() {
   };
 
   const handleDelete = async (id: number) => {
-    await fetch(`/api/v1/downloadclient/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+    await deleteDownloadClient(id);
     fetchClients();
   };
 

@@ -1,22 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const key = localStorage.getItem('kagarr_api_key');
-  if (key) headers['X-Api-Key'] = key;
-  return headers;
-}
-
-interface IndexerResource {
-  id: number;
-  name: string;
-  implementation: string;
-  settings: string;
-  enableRss: boolean;
-  enableSearch: boolean;
-  priority: number;
-}
+import { IndexerResource, getIndexers, saveIndexer, deleteIndexer } from '../api';
 
 interface IndexerForm {
   name: string;
@@ -49,8 +33,7 @@ function IndexerSettings() {
 
   const fetchIndexers = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/indexer', { headers: getAuthHeaders() });
-      setIndexers(await res.json());
+      setIndexers(await getIndexers());
     } catch {
       setError(t('settings.failedToLoadIndexers'));
     } finally {
@@ -77,13 +60,7 @@ function IndexerSettings() {
     };
 
     try {
-      const method = editId ? 'PUT' : 'POST';
-      const url = editId ? `/api/v1/indexer/${editId}` : '/api/v1/indexer';
-      await fetch(url, {
-        method,
-        headers: getAuthHeaders(),
-        body: JSON.stringify(body),
-      });
+      await saveIndexer(body, editId);
       setShowForm(false);
       setForm(EMPTY_FORM);
       setEditId(null);
@@ -109,7 +86,7 @@ function IndexerSettings() {
   };
 
   const handleDelete = async (id: number) => {
-    await fetch(`/api/v1/indexer/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
+    await deleteIndexer(id);
     fetchIndexers();
   };
 

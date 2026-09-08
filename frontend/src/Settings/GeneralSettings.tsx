@@ -5,6 +5,8 @@ import {
   testDiscord,
   testIndexer,
   testDownloadClient,
+  getIndexers,
+  getDownloadClients,
   setApiKey,
   TestResult,
 } from '../api';
@@ -41,22 +43,14 @@ function GeneralSettings() {
   const [loadingServices, setLoadingServices] = useState(true);
 
   const fetchServices = useCallback(async () => {
-    const headers: Record<string, string> = {};
-    const key = localStorage.getItem('kagarr_api_key');
-    if (key) headers['X-Api-Key'] = key;
-
-    try {
-      const [idxRes, clRes] = await Promise.all([
-        fetch('/api/v1/indexer', { headers }),
-        fetch('/api/v1/downloadclient', { headers }),
-      ]);
-      if (idxRes.ok) setIndexers(await idxRes.json());
-      if (clRes.ok) setClients(await clRes.json());
-    } catch {
-      // Services may not be configured yet
-    } finally {
-      setLoadingServices(false);
-    }
+    // Services may not be configured yet, so tolerate individual failures
+    const [idxResult, clResult] = await Promise.allSettled([
+      getIndexers(),
+      getDownloadClients(),
+    ]);
+    if (idxResult.status === 'fulfilled') setIndexers(idxResult.value);
+    if (clResult.status === 'fulfilled') setClients(clResult.value);
+    setLoadingServices(false);
   }, []);
 
   useEffect(() => {
